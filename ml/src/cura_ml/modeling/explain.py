@@ -17,8 +17,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import shap
-import xgboost as xgb
 from sklearn.pipeline import Pipeline
 
 from cura_ml.features import spec as S
@@ -36,7 +34,9 @@ def contributions(model: Any, X: np.ndarray) -> tuple[np.ndarray, np.ndarray, st
         z = sc.transform(imp.transform(X))
         contrib = z * clf.coef_[0]
         return contrib, np.full(len(X), float(clf.intercept_[0])), "logistic_regression_contributions"
-    if isinstance(model, xgb.XGBClassifier):
+    if type(model).__module__.startswith("xgboost"):
+        import shap  # lazy: only XGBoost explanations need it
+
         explainer = shap.TreeExplainer(model)
         values = np.asarray(explainer.shap_values(X), dtype=float)
         base = float(np.ravel(explainer.expected_value)[0])
@@ -44,8 +44,10 @@ def contributions(model: Any, X: np.ndarray) -> tuple[np.ndarray, np.ndarray, st
     raise TypeError(f"no explanation method for {type(model).__name__}")
 
 
-def native_tree_contributions(model: xgb.XGBClassifier, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def native_tree_contributions(model, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """XGBoost's built-in TreeSHAP (`pred_contribs`), used to cross-check the shap library."""
+    import xgboost as xgb
+
     out = model.get_booster().predict(xgb.DMatrix(X), pred_contribs=True)
     return out[:, :-1], out[:, -1]
 

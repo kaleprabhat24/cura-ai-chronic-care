@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   PhoneCall,
+  Users,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["coordinator", "analyst", "admin"] },
   { href: "/worklist", label: "Worklist", icon: ClipboardList, roles: ["coordinator", "admin"] },
+  { href: "/patients", label: "Patients", icon: Users, roles: ["coordinator", "admin"] },
   { href: "/outreach", label: "Outreach", icon: PhoneCall, roles: ["coordinator", "admin"] },
   { href: "/outcomes", label: "Outcomes", icon: BarChart3, roles: ["coordinator", "analyst", "admin"] },
   { href: "/model", label: "Model & data", icon: FlaskConical, roles: ["coordinator", "analyst", "admin"] },

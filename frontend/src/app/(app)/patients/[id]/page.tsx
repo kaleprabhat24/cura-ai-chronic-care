@@ -9,6 +9,7 @@ import { PageHeader, RoleGate } from "@/components/app-shell";
 import { COLORS, SimpleLines } from "@/components/charts";
 import { FhirExportButton } from "@/components/fhir-export";
 import { OutreachForm } from "@/components/outreach-form";
+import { AddHistorySheet, ScoreStatusPanel } from "@/components/patient-onboarding";
 import {
   ExplanationFactors,
   FollowUpBadge,
@@ -23,11 +24,13 @@ import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitl
 import { api, unwrap, type Schemas } from "@/lib/api/client";
 import { conditionLabel, fmtDate, fmtDateTime, humanize, OUTCOME_LABELS, pct } from "@/lib/format";
 import { FOLLOW_UP_LABELS, presentScore } from "@/lib/score";
+import type { Programme } from "@/lib/registration";
 import { cn } from "@/lib/utils";
 
 const HBA1C = "4548-4";
 const SBP = "8480-6";
 const DBP = "8462-4";
+const PROGRAMME_BY_CODE: Record<string, Programme> = { "44054006": "t2d", "38341003": "htn" };
 const EVENT_FILTERS = [
   { id: "all", label: "All" },
   { id: "encounter", label: "Visits" },
@@ -112,11 +115,14 @@ function Patient360() {
     eventFilter === "all" ? true : eventFilter === "medication" ? e.type.startsWith("medication") : e.type === eventFilter,
   );
   const view = episode ? presentScore(episode.score_context) : null;
+  const isApp = p.id.startsWith("pt_app_");
+  const programmes = [...new Set(d.conditions.map((c) => PROGRAMME_BY_CODE[c.code]).filter(Boolean))];
+  const outreachEpisode = episode?.eligible ? episode : episodes.find((e) => e.eligible);
 
   return (
     <>
-      <Link href="/worklist" className="mb-3 inline-flex items-center gap-1 text-[13px] text-ink-subtle hover:text-ink">
-        <ArrowLeft className="size-3.5" /> Worklist
+      <Link href={isApp ? "/patients" : "/worklist"} className="mb-3 inline-flex items-center gap-1 text-[13px] text-ink-subtle hover:text-ink">
+        <ArrowLeft className="size-3.5" /> {isApp ? "Patients" : "Worklist"}
       </Link>
       <PageHeader
         title={`${p.given_name} ${p.family_name}`}
@@ -124,6 +130,8 @@ function Patient360() {
         actions={
           <div className="flex flex-wrap gap-2">
             <FhirExportButton patientId={p.id} />
+            <AddHistorySheet patientId={p.id} programmes={programmes} birthDate={p.birth_date}
+                             outreachEpisode={outreachEpisode} />
             {episode?.eligible && (
               <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
@@ -141,6 +149,7 @@ function Patient360() {
       />
       <div className="mb-4 flex flex-wrap gap-2">
         <ProvenanceTag provenance={p.provenance} />
+        {isApp && <Badge tone="info">Registered in Cura AI</Badge>}
         {p.death_date && <Badge tone="danger">Died {fmtDate(p.death_date)}</Badge>}
         {p.transfer_out_date && <Badge tone="warn">Transferred out {fmtDate(p.transfer_out_date)}</Badge>}
         {d.conditions.map((c) => (
@@ -152,6 +161,7 @@ function Patient360() {
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-4">
+          {isApp && <ScoreStatusPanel patientId={p.id} />}
           <Card>
             <CardHeader>
               <div>
@@ -161,7 +171,7 @@ function Patient360() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {episodes.filter((e) => e.eligible).slice(0, 12).map((e) => (
+                {episodes.filter((e) => e.eligible || isApp).slice(0, 12).map((e) => (
                   <button
                     key={e.id}
                     onClick={() => router.replace(`/patients/${p.id}?episode=${e.id}`, { scroll: false })}
@@ -229,8 +239,10 @@ function Patient360() {
                     </div>
                   ) : (
                     <InlineNotice tone="warn">
-                      No usable score for this episode in the latest scoring run
-                      {episode.score_context.data_sufficiency === "limited_history" ? " (limited history)." : "."}
+                      {isApp
+                        ? "No score for this episode yet. The prediction status above explains why."
+                        : "No usable score for this episode in the latest scoring run"}
+                      {!isApp && (episode.score_context.data_sufficiency === "limited_history" ? " (limited history)." : ".")}
                     </InlineNotice>
                   )}
                 </>

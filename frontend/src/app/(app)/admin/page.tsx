@@ -19,7 +19,7 @@ function FhirExportPanel() {
   const results = useQuery({
     queryKey: ["patient-search", submitted],
     enabled: submitted.length > 0,
-    queryFn: () => unwrap(api.GET("/api/v1/worklist", { params: { query: { q: submitted, status: "all", page_size: 10 } } })),
+    queryFn: () => unwrap(api.GET("/api/v1/patients", { params: { query: { q: submitted, page_size: 10 } } })),
   });
   const patients = new Map((results.data?.items ?? []).map((i) => [i.patient.id, i.patient]));
   return (

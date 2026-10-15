@@ -35,3 +35,7 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["cura_ml", "cura_api"]
+
+[tool.ruff.lint.per-file-ignores]
+# long, user-facing explanation strings
+"backend/src/cura_api/services/onboarding.py" = ["E501"]

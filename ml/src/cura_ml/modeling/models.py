@@ -15,7 +15,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from xgboost import XGBClassifier
 
 EPS = 1e-6
 
@@ -59,7 +58,10 @@ def make_logistic_regression(C: float) -> Pipeline:
 
 
 def make_xgboost(cfg: dict[str, Any], max_depth: int, n_estimators: int, seed: int,
-                 early_stopping_rounds: int | None = None) -> XGBClassifier:
+                 early_stopping_rounds: int | None = None):
+    # imported lazily so that loading a logistic-regression bundle does not load XGBoost
+    from xgboost import XGBClassifier
+
     return XGBClassifier(
         n_estimators=n_estimators, max_depth=max_depth, learning_rate=cfg["learning_rate"],
         subsample=cfg["subsample"], colsample_bytree=cfg["colsample_bytree"],

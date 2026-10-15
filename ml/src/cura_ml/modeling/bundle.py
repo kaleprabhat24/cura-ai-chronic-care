@@ -19,7 +19,6 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 
 from cura_ml.features import spec as S
 from cura_ml.modeling.explain import contributions, explain_rows
@@ -83,7 +82,7 @@ def save_bundle(path: str | Path, model: Any, calibrator: Calibrator, metadata: 
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "calibrator": calibrator}, path / "model.joblib")
-    if isinstance(model, xgb.XGBClassifier):
+    if type(model).__module__.startswith("xgboost"):
         model.save_model(path / "xgboost_model.json")
     for name, obj in (("metadata.json", metadata), ("evaluation.json", evaluation),
                       ("feature_spec.json", {"version": S.FEATURE_SPEC_VERSION,

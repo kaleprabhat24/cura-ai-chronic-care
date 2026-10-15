@@ -72,6 +72,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Patient list and search */
+        get: operations["list_patients_api_v1_patients_get"];
+        put?: never;
+        /** Register a fictional patient with conditions and longitudinal history */
+        post: operations["register_patient_api_v1_patients_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{patient_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add clinical-history entries to a patient */
+        post: operations["add_history_api_v1_patients__patient_id__history_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{patient_id}/score-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Why a registered patient does or does not have a risk score (read-only) */
+        get: operations["get_score_status_api_v1_patients__patient_id__score_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{patient_id}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Score a registered patient's follow-ups whose prediction time has arrived */
+        post: operations["post_score_api_v1_patients__patient_id__score_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/patients/{patient_id}": {
         parameters: {
             query?: never;
@@ -405,6 +474,25 @@ export interface components {
             /** Last Sign In At */
             last_sign_in_at: string | null;
         };
+        /** AppointmentIn */
+        AppointmentIn: {
+            /**
+             * Programme
+             * @enum {string}
+             */
+            programme: "t2d" | "htn";
+            /**
+             * Scheduled For
+             * Format: date-time
+             * @description Appointment date and time
+             */
+            scheduled_for: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "booked" | "attended" | "no_show" | "cancelled_patient" | "cancelled_clinic";
+        };
         /** AuditEventOut */
         AuditEventOut: {
             /** Id */
@@ -428,6 +516,19 @@ export interface components {
             details: {
                 [key: string]: unknown;
             };
+        };
+        /** ConditionIn */
+        ConditionIn: {
+            /**
+             * Programme
+             * @enum {string}
+             */
+            programme: "t2d" | "htn";
+            /**
+             * Onset Date
+             * Format: date
+             */
+            onset_date: string;
         };
         /** ConditionOut */
         ConditionOut: {
@@ -559,6 +660,24 @@ export interface components {
                 [key: string]: number;
             };
             latest_scoring_run: components["schemas"]["ScoringRunOut"] | null;
+        };
+        /** EncounterIn */
+        EncounterIn: {
+            /**
+             * Encounter Type
+             * @enum {string}
+             */
+            encounter_type: "review_t2d" | "review_htn" | "acute";
+            /**
+             * Start At
+             * Format: date-time
+             */
+            start_at: string;
+            /**
+             * Duration Minutes
+             * @default 20
+             */
+            duration_minutes: number;
         };
         /** EpisodeOut */
         EpisodeOut: {
@@ -701,6 +820,23 @@ export interface components {
             /** Latest Scoring Run Id */
             latest_scoring_run_id: number | null;
         };
+        /** HistoryAddition */
+        HistoryAddition: {
+            /** Submission Id */
+            submission_id: string;
+            history: components["schemas"]["HistoryIn"];
+        };
+        /** HistoryIn */
+        HistoryIn: {
+            /** Appointments */
+            appointments?: components["schemas"]["AppointmentIn"][];
+            /** Encounters */
+            encounters?: components["schemas"]["EncounterIn"][];
+            /** Observations */
+            observations?: components["schemas"]["ObservationIn"][];
+            /** Medications */
+            medications?: components["schemas"]["MedicationIn"][];
+        };
         /** Me */
         Me: {
             /** User Id */
@@ -711,6 +847,24 @@ export interface components {
             auth_mode: string;
             /** Display Name */
             display_name?: string | null;
+        };
+        /** MedicationIn */
+        MedicationIn: {
+            /**
+             * Medication
+             * @enum {string}
+             */
+            medication: "metformin" | "glipizide" | "empagliflozin" | "insulin_glargine" | "atorvastatin" | "lisinopril" | "amlodipine" | "hydrochlorothiazide";
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * @description Set when the medicine was stopped
+             */
+            end_date?: string | null;
         };
         /** MedicationOut */
         MedicationOut: {
@@ -829,6 +983,23 @@ export interface components {
             /** Disclaimer */
             disclaimer: string;
         };
+        /** ObservationIn */
+        ObservationIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "hba1c" | "sbp" | "dbp" | "weight" | "heart_rate";
+            /** Value */
+            value: number;
+            /** Unit */
+            unit: string;
+            /**
+             * Effective At
+             * Format: date-time
+             */
+            effective_at: string;
+        };
         /** ObservationOut */
         ObservationOut: {
             /**
@@ -857,6 +1028,59 @@ export interface components {
              * Format: date-time
              */
             recorded_at: string;
+        };
+        /** OnboardingEpisode */
+        OnboardingEpisode: {
+            /** Episode Id */
+            episode_id: string;
+            /** Programme */
+            programme: string;
+            /**
+             * Index Event At
+             * Format: date-time
+             */
+            index_event_at: string;
+            /**
+             * Due Date
+             * Format: date
+             */
+            due_date: string;
+            /**
+             * Prediction At
+             * Format: date-time
+             */
+            prediction_at: string;
+            /** Eligible */
+            eligible: boolean;
+            /** Ineligible Reason */
+            ineligible_reason: string | null;
+        };
+        /** OnboardingResult */
+        OnboardingResult: {
+            /** Patient Id */
+            patient_id: string;
+            /** Synthetic Mrn */
+            synthetic_mrn: string;
+            /**
+             * Created
+             * @description False when this submission was already processed (safe replay)
+             */
+            created: boolean;
+            /** History Counts */
+            history_counts: {
+                [key: string]: number;
+            };
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Episodes */
+            episodes: components["schemas"]["OnboardingEpisode"][];
+            /** Score Status */
+            score_status: components["schemas"]["ScoreAvailability"][];
+            /** Notes */
+            notes: string[];
         };
         /** OutcomesSummary */
         OutcomesSummary: {
@@ -931,6 +1155,43 @@ export interface components {
             next_action: "none" | "retry" | "retry_later" | "book_appointment" | "await_response" | "update_contact_details" | "escalate" | "other";
             /** Next Action Due */
             next_action_due?: string | null;
+        };
+        /**
+         * OutreachHistoryIn
+         * @description A historical outreach attempt: the same rules as recording outreach, plus its programme and a
+         *     required attempt time.
+         */
+        OutreachHistoryIn: {
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "phone" | "sms" | "letter" | "email" | "in_person";
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "no_answer" | "left_message" | "reached_booked" | "reached_declined" | "reached_already_done" | "wrong_number" | "other";
+            /**
+             * Attempted At
+             * Format: date-time
+             */
+            attempted_at: string;
+            /** Note */
+            note?: string | null;
+            /**
+             * Next Action
+             * @default none
+             * @enum {string}
+             */
+            next_action: "none" | "retry" | "retry_later" | "book_appointment" | "await_response" | "update_contact_details" | "escalate" | "other";
+            /** Next Action Due */
+            next_action_due?: string | null;
+            /**
+             * Programme
+             * @enum {string}
+             */
+            programme: "t2d" | "htn";
         };
         /** OutreachListItem */
         OutreachListItem: {
@@ -1069,6 +1330,19 @@ export interface components {
             /** Total Pages */
             total_pages: number;
         };
+        /** Page[PatientListItem] */
+        Page_PatientListItem_: {
+            /** Items */
+            items: components["schemas"]["PatientListItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+            /** Total Pages */
+            total_pages: number;
+        };
         /** Page[ScoringRunOut] */
         Page_ScoringRunOut_: {
             /** Items */
@@ -1102,6 +1376,21 @@ export interface components {
             counts: {
                 [key: string]: number;
             };
+        };
+        /** PatientListItem */
+        PatientListItem: {
+            patient: components["schemas"]["PatientSummary"];
+            /** Registered In App */
+            registered_in_app: boolean;
+            /** Programmes */
+            programmes: string[];
+            /**
+             * Registered On
+             * Format: date
+             */
+            registered_on: string;
+            /** Next Due Date */
+            next_due_date: string | null;
         };
         /** PatientOut */
         PatientOut: {
@@ -1143,6 +1432,51 @@ export interface components {
             transfer_out_date: string | null;
             /** Is Synthetic */
             is_synthetic: boolean;
+        };
+        /** PatientRegistration */
+        PatientRegistration: {
+            /**
+             * Submission Id
+             * @description Client-generated UUID; resubmitting the same id never creates a second patient
+             */
+            submission_id: string;
+            /** Given Name */
+            given_name: string;
+            /** Family Name */
+            family_name: string;
+            /**
+             * Birth Date
+             * Format: date
+             */
+            birth_date: string;
+            /**
+             * Sex
+             * @enum {string}
+             */
+            sex: "female" | "male";
+            /**
+             * Deprivation Quintile
+             * @description 1 = least, 5 = most deprived area
+             */
+            deprivation_quintile: number;
+            /**
+             * Preferred Language
+             * @default en
+             */
+            preferred_language: string;
+            /**
+             * Registered On
+             * Format: date
+             */
+            registered_on: string;
+            /** Conditions */
+            conditions: components["schemas"]["ConditionIn"][];
+            history?: components["schemas"]["RegistrationHistoryIn"];
+            /**
+             * Allow Possible Duplicate
+             * @default false
+             */
+            allow_possible_duplicate: boolean;
         };
         /** PatientSummary */
         PatientSummary: {
@@ -1222,6 +1556,19 @@ export interface components {
             label_status: string;
             /** Censor Reason */
             censor_reason: string | null;
+        };
+        /** RegistrationHistoryIn */
+        RegistrationHistoryIn: {
+            /** Appointments */
+            appointments?: components["schemas"]["AppointmentIn"][];
+            /** Encounters */
+            encounters?: components["schemas"]["EncounterIn"][];
+            /** Observations */
+            observations?: components["schemas"]["ObservationIn"][];
+            /** Medications */
+            medications?: components["schemas"]["MedicationIn"][];
+            /** Outreach */
+            outreach?: components["schemas"]["OutreachHistoryIn"][];
         };
         /** RiskScoreDetail */
         RiskScoreDetail: {
@@ -1308,6 +1655,36 @@ export interface components {
              */
             scored_at: string;
         };
+        /** ScoreAvailability */
+        ScoreAvailability: {
+            /** Programme */
+            programme: string;
+            /** Episode Id */
+            episode_id: string | null;
+            /** Due Date */
+            due_date: string | null;
+            /** Prediction At */
+            prediction_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "scored" | "already_scored" | "ready_to_score" | "unavailable";
+            /** Reason */
+            reason?: ("no_review_history" | "prediction_time_not_reached" | "history_recorded_after_prediction_time" | "condition_recorded_after_prediction_time" | "completed_before_prediction" | "outside_study_period" | "patient_left_care" | "superseded" | "not_registered_in_app" | "scoring_error") | null;
+            /** Message */
+            message: string;
+            /** Risk Score Id */
+            risk_score_id?: number | null;
+            /** Probability */
+            probability?: number | null;
+            /** Risk Tier */
+            risk_tier?: ("high" | "medium" | "low") | null;
+            /** Model Version */
+            model_version?: string | null;
+            /** Scored At */
+            scored_at?: string | null;
+        };
         /**
          * ScoreContext
          * @description How to read a score for this episode at the data cutoff (`as_of`).
@@ -1351,6 +1728,20 @@ export interface components {
             data_sufficiency: "adequate" | "limited_history";
             /** Summary */
             summary: string;
+        };
+        /** ScoreStatusOut */
+        ScoreStatusOut: {
+            /** Patient Id */
+            patient_id: string;
+            /** Registered In App */
+            registered_in_app: boolean;
+            /**
+             * Evaluated At
+             * Format: date-time
+             */
+            evaluated_at: string;
+            /** Score Status */
+            score_status: components["schemas"]["ScoreAvailability"][];
         };
         /** ScoringRunOut */
         ScoringRunOut: {
@@ -1716,6 +2107,362 @@ export interface operations {
             };
             /** @description Role not permitted */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_patients_api_v1_patients_get: {
+        parameters: {
+            query?: {
+                /** @description name, MRN or patient id */
+                q?: string | null;
+                /** @description registered = added in Cura AI */
+                origin?: "all" | "registered" | "synthetic";
+                sort?: "name" | "recently_registered";
+                /** @description 1-based page number */
+                page?: number;
+                page_size?: number;
+            };
+            header?: {
+                /** @description Supabase mode: Bearer access token */
+                authorization?: string | null;
+                /** @description Dev mode only: user id */
+                "x-dev-user"?: string | null;
+                /** @description Dev mode only: role (coordinator | analyst | admin) */
+                "x-dev-role"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PatientListItem_"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not permitted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    register_patient_api_v1_patients_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Supabase mode: Bearer access token */
+                authorization?: string | null;
+                /** @description Dev mode only: user id */
+                "x-dev-user"?: string | null;
+                /** @description Dev mode only: role (coordinator | analyst | admin) */
+                "x-dev-role"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientRegistration"];
+            };
+        };
+        responses: {
+            /** @description Submission already processed (safe replay) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResult"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResult"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not permitted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Possible duplicate or conflicting record */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    add_history_api_v1_patients__patient_id__history_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Supabase mode: Bearer access token */
+                authorization?: string | null;
+                /** @description Dev mode only: user id */
+                "x-dev-user"?: string | null;
+                /** @description Dev mode only: role (coordinator | analyst | admin) */
+                "x-dev-role"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HistoryAddition"];
+            };
+        };
+        responses: {
+            /** @description Submission already processed (safe replay) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResult"];
+                };
+            };
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResult"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not permitted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_score_status_api_v1_patients__patient_id__score_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Supabase mode: Bearer access token */
+                authorization?: string | null;
+                /** @description Dev mode only: user id */
+                "x-dev-user"?: string | null;
+                /** @description Dev mode only: role (coordinator | analyst | admin) */
+                "x-dev-role"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreStatusOut"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not permitted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    post_score_api_v1_patients__patient_id__score_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Supabase mode: Bearer access token */
+                authorization?: string | null;
+                /** @description Dev mode only: user id */
+                "x-dev-user"?: string | null;
+                /** @description Dev mode only: role (coordinator | analyst | admin) */
+                "x-dev-role"?: string | null;
+            };
+            path: {
+                patient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreStatusOut"];
+                };
+            };
+            /** @description Missing or invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Role not permitted */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Possible duplicate or conflicting record */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

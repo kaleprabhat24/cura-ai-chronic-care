@@ -8,7 +8,8 @@ deterioration or diagnosis. Never present synthetic results as clinical evidence
   Schema: `docs/DATA_DICTIONARY.md`. Decisions: `docs/DECISIONS.md` (add an ADR for any
   non-obvious choice).
 - Status: **all milestones implemented** (data, features, models, backend, frontend, Supabase auth code,
-  FHIR export). Not deployed; Supabase live connectivity and the HL7 FHIR validator not verified.
+  FHIR export) plus patient onboarding (ADR-022: register/add history in the app, per-patient
+  point-in-time scoring, no schema change). Not deployed; Supabase live connectivity and the HL7 FHIR validator not verified.
 - Frontend: `frontend/` (Next.js 15, typed client from `backend/openapi.json` via `npm run gen:api`).
   After changing API schemas: `cura-api openapi` then `npm --prefix frontend run gen:api`.
 - Features: `docs/FEATURES.md` is generated from `ml/src/cura_ml/features/spec.py`. Never edit it by hand.

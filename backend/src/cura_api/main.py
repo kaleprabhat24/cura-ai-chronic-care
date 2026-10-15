@@ -9,9 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, sessionmaker
 
 from cura_api import __version__, errors
-from cura_api.api import core, insights, patients, worklist
+from cura_api.api import core, insights, onboarding, patients, worklist
 from cura_api.auth import build_verifier
-from cura_api.db import engine_from_settings, make_session_factory
+from cura_api.db import engine_from_settings, make_session_factory, utcnow
 from cura_api.settings import Settings, get_settings
 
 API_PREFIX = "/api/v1"
@@ -32,7 +32,7 @@ Backend for **Cura AI**, a chronic-disease follow-up prioritisation demo. **All 
 
 def create_app(settings: Settings | None = None,
                session_factory: sessionmaker[Session] | None = None,
-               token_verifier=None) -> FastAPI:
+               token_verifier=None, clock=None) -> FastAPI:
     settings = settings or get_settings()
     settings.check_runtime()
     engine = None
@@ -52,12 +52,13 @@ def create_app(settings: Settings | None = None,
                                                       "admin")])
     app.state.settings = settings
     app.state.session_factory = session_factory
+    app.state.clock = clock or utcnow  # real UTC time; tests may inject a fixed clock
     app.state.token_verifier = token_verifier or (build_verifier(settings)
                                                   if settings.auth_mode == "supabase" else None)
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False,
                        allow_methods=["GET", "POST"],
                        allow_headers=["Authorization", "Content-Type", "X-Dev-User", "X-Dev-Role"])
     errors.install(app)
-    for router in (core.router, worklist.router, patients.router, insights.router):
+    for router in (core.router, worklist.router, onboarding.router, patients.router, insights.router):
         app.include_router(router, prefix=API_PREFIX)
     return app

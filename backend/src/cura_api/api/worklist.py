@@ -5,21 +5,25 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import and_, func, or_, select
+from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import and_, case, func, or_, select
 
 from cura_api import models as m
 from cura_api import schemas as s
 from cura_api.api.common import (
+    APP_PATIENT_PREFIX,
     CONDITION_LABELS,
     PageParams,
     SessionDep,
+    effective_run_id,
     latest_load,
     latest_run,
     patient_summary,
     prediction_summary,
     recorded_outcome,
+    reference_date,
     score_context,
+    today,
 )
 from cura_api.api.core import episode_base, open_episode_filter
 from cura_api.auth import CLINICAL, Principal
@@ -36,6 +40,7 @@ def _escape_like(text: str) -> str:
 
 @router.get("/worklist", response_model=s.WorklistPage, summary="Follow-up worklist")
 def worklist(
+    request: Request,
     session: SessionDep,
     _: Annotated[Principal, Depends(CLINICAL)],
     paging: Annotated[PageParams, Depends()],
@@ -62,7 +67,12 @@ def worklist(
                        {"due_from": str(due_from), "due_to": str(due_to)})
     as_of = latest_load(session).data_cutoff
     run = latest_run(session)
-    run_id = run.id if run else -1
+    now_day = today(request)
+    # Synthetic cohort episodes are judged at the dataset cutoff; patients registered in Cura AI live in
+    # real time (see reference_date).
+    ref = case((m.Patient.id.like(APP_PATIENT_PREFIX.replace("_", "\\_") + "%", escape="\\"),
+                max(as_of, now_day)), else_=as_of)
+    current_run = effective_run_id(run.id if run else None)
     last_contact = (select(func.max(m.OutreachAttempt.attempted_at))
                     .where(m.OutreachAttempt.episode_id == m.FollowupEpisode.id)
                     .correlate(m.FollowupEpisode).scalar_subquery())
@@ -72,7 +82,7 @@ def worklist(
     query = (episode_base(m.FollowupEpisode, m.Patient, m.EpisodeOutcome, m.RiskScore,
                           last_contact.label("last_contact"), n_outreach.label("n_outreach"))
              .outerjoin(m.RiskScore, and_(m.RiskScore.episode_id == m.FollowupEpisode.id,
-                                          m.RiskScore.scoring_run_id == run_id))
+                                          m.RiskScore.scoring_run_id == current_run))
              .where(m.FollowupEpisode.eligible.is_(True)))
     if status == "open":
         query = query.where(open_episode_filter())
@@ -91,12 +101,12 @@ def worklist(
     if due_to:
         query = query.where(m.FollowupEpisode.due_date <= due_to)
     if overdue is not None:
-        query = query.where(m.FollowupEpisode.due_date < as_of if overdue
-                            else m.FollowupEpisode.due_date >= as_of)
+        query = query.where(m.FollowupEpisode.due_date < ref if overdue
+                            else m.FollowupEpisode.due_date >= ref)
     if queue == "predictive":
-        query = query.where(m.FollowupEpisode.window_end_date >= as_of, m.RiskScore.id.is_not(None))
+        query = query.where(m.FollowupEpisode.window_end_date >= ref, m.RiskScore.id.is_not(None))
     elif queue == "overdue":
-        query = query.where(m.FollowupEpisode.window_end_date < as_of)
+        query = query.where(m.FollowupEpisode.window_end_date < ref)
     elif queue == "no_score":
         query = query.where(m.RiskScore.id.is_(None))
 
@@ -120,15 +130,16 @@ def worklist(
     items = []
     for ep, pt, out, rs, _lc, n in rows:
         lo = last.get(ep.id)
+        day = reference_date(pt.id, as_of, now_day)
         items.append(s.WorklistItem(
             episode_id=ep.id, programme=ep.programme, condition=CONDITION_LABELS[ep.programme],
-            due_date=ep.due_date, days_until_due=(ep.due_date - as_of).days,
-            prediction_at=ep.prediction_at, patient=patient_summary(pt, as_of),
+            due_date=ep.due_date, days_until_due=(ep.due_date - day).days,
+            prediction_at=ep.prediction_at, patient=patient_summary(pt, day),
             prediction=prediction_summary(rs),
             last_outreach=None if lo is None else s.OutreachSummary(
                 id=lo.id, attempted_at=lo.attempted_at, channel=lo.channel, outcome=lo.outcome,
                 origin=lo.origin),
-            outreach_attempts=n or 0, recorded_outcome=recorded_outcome(ep, out, as_of),
-            score_context=score_context(ep, out, rs, as_of)))
+            outreach_attempts=n or 0, recorded_outcome=recorded_outcome(ep, out, day),
+            score_context=score_context(ep, out, rs, day)))
     return s.WorklistPage(items=items, as_of=as_of, scoring_run_id=run.id if run else None,
                           **paging.meta(total))

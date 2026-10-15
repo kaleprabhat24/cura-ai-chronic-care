@@ -153,3 +153,21 @@ an auth guard, TanStack Query, and an openapi-fetch client typed from `backend/o
 primitives (no generator run). Charts use Recharts. All figures come from the API. The API process
 no longer imports the training stack (`data_fingerprint` moved to `cura_ml.manifest`), which keeps
 memory low on small hosts.
+
+**ADR-022 — Patient onboarding without schema changes (2026-10-15).** Coordinators and admins can
+register fictional patients and add history (`POST /patients`, `POST /patients/{id}/history`), using
+the existing tables only. Ids are server-generated (`pt_app_…`, `en_app_…`, …) by uuid5 from a
+client `submission_id`, so a retried or double-clicked submission hits the primary key and replays
+instead of duplicating. App patients are recognised by the id prefix; synthetic cohort data and
+`cura-api seed` ignore them. Records are never backdated: `recorded_at`/`booked_at`/
+`status_recorded_at` are the entry time and clinical dates are kept as entered. Episodes for app
+patients are derived by the same `build_episodes`, and scoring uses the saved bundle, feature builder,
+explanations and tier thresholds unchanged, at the episode's prediction time (t0 = due − 14 d) with
+only history recorded before t0. Consequently a just-registered patient usually has no score: either
+t0 is in the future (`prediction_time_not_reached`) or it passed before the history was entered
+(`history_recorded_after_prediction_time`). Once t0 arrives, `POST /patients/{id}/score` (or saving
+history) creates a `scoring_runs` row with scope `patient`; the current score for an episode is the
+newest patient-scope score, else the latest batch run, and `latest_run` still means batch runs only.
+App patients are judged against the real date (`max(cutoff, today)`); the cohort stays at its
+cutoff. Limitation: persisted eligibility for an app episode only refreshes on register, history or
+score actions, so it joins the worklist after someone generates its score.

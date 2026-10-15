@@ -83,6 +83,8 @@ def _upsert(session: Session, table: Table, key: str, rows: list[dict[str, Any]]
     query = select(table.c[key], table.c.row_hash)
     if existing_filter is not None:
         query = query.where(existing_filter)
+    # rows entered in the app (`<prefix>_app_...`) are never compared, updated or reported here
+    query = query.where(~table.c[key].like("%\\_app\\_%", escape="\\"))
     existing = dict(session.execute(query).all())
     inserts, updates, skipped = [], [], 0
     for r in rows:

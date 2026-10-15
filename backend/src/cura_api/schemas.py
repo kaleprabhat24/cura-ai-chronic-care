@@ -497,3 +497,246 @@ class AuditEventOut(BaseModel):
     entity_type: str
     entity_id: str | None
     details: dict[str, Any]
+
+
+# ---------------------------------------------------------------- patient onboarding
+# Only fields the existing tables can represent. Effective (clinical) dates come from the user;
+# every recorded_at / booked_at / status_recorded_at is set by the server at the moment of entry.
+NAME_PATTERN = r"^[A-Za-z][A-Za-z '\-.]{0,79}$"
+SUBMISSION_ID = r"^[0-9a-fA-F-]{32,36}$"
+ObservationKind = Literal["hba1c", "sbp", "dbp", "weight", "heart_rate"]
+MedicationKey = Literal["metformin", "glipizide", "empagliflozin", "insulin_glargine", "atorvastatin",
+                        "lisinopril", "amlodipine", "hydrochlorothiazide"]
+AppointmentStatus = Literal["booked", "attended", "no_show", "cancelled_patient", "cancelled_clinic"]
+EncounterType = Literal["review_t2d", "review_htn", "acute"]
+MAX_ITEMS = 200
+FUTURE_SLACK = timedelta(minutes=5)
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
+
+
+class ConditionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    programme: Programme
+    onset_date: date
+
+    @field_validator("onset_date")
+    @classmethod
+    def _not_future(cls, v: date) -> date:
+        if v > _now().date():
+            raise ValueError("onset_date must not be in the future")
+        return v
+
+
+class AppointmentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    programme: Programme
+    scheduled_for: AwareDatetime = Field(description="Appointment date and time")
+    status: AppointmentStatus
+
+    @model_validator(mode="after")
+    def _status_matches_time(self) -> AppointmentIn:
+        future = self.scheduled_for > _now() + FUTURE_SLACK
+        if future and self.status in ("attended", "no_show"):
+            raise ValueError("a future appointment cannot have an attendance result; use 'booked'")
+        if not future and self.status == "booked":
+            raise ValueError("a past appointment needs its outcome (attended, no_show or cancelled)")
+        return self
+
+
+class EncounterIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    encounter_type: EncounterType
+    start_at: AwareDatetime
+    duration_minutes: int = Field(default=20, ge=5, le=240)
+
+    @field_validator("start_at")
+    @classmethod
+    def _past(cls, v: datetime) -> datetime:
+        if v > _now() + FUTURE_SLACK:
+            raise ValueError("a completed visit cannot be in the future")
+        return v
+
+
+class ObservationIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: ObservationKind
+    value: float
+    unit: str = Field(min_length=1, max_length=16)
+    effective_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def _unit_range_time(self) -> ObservationIn:
+        from cura_ml.synth import catalog as cat
+
+        _code, display, unit, (lo, hi) = cat.OBSERVATIONS[self.kind]
+        if self.unit != unit:
+            raise ValueError(f"{display} must be recorded in '{unit}' (got '{self.unit}')")
+        if not lo <= self.value <= hi:
+            raise ValueError(f"{display} {self.value:g} {unit} is outside the plausible range {lo:g}-{hi:g}")
+        if self.effective_at > _now() + FUTURE_SLACK:
+            raise ValueError("an observation cannot be in the future")
+        return self
+
+
+class MedicationIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    medication: MedicationKey
+    start_date: date
+    end_date: date | None = Field(default=None, description="Set when the medicine was stopped")
+
+    @model_validator(mode="after")
+    def _dates(self) -> MedicationIn:
+        today = _now().date()
+        if self.start_date > today:
+            raise ValueError("start_date must not be in the future")
+        if self.end_date is not None and not self.start_date <= self.end_date <= today:
+            raise ValueError("end_date must be between start_date and today")
+        return self
+
+
+class OutreachHistoryIn(OutreachCreate):
+    """A historical outreach attempt: the same rules as recording outreach, plus its programme and a
+    required attempt time."""
+
+    programme: Programme
+    attempted_at: AwareDatetime  # required for history
+
+
+class HistoryIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    appointments: list[AppointmentIn] = Field(default_factory=list, max_length=MAX_ITEMS)
+    encounters: list[EncounterIn] = Field(default_factory=list, max_length=MAX_ITEMS)
+    observations: list[ObservationIn] = Field(default_factory=list, max_length=MAX_ITEMS)
+    medications: list[MedicationIn] = Field(default_factory=list, max_length=MAX_ITEMS)
+
+    def count(self) -> int:
+        return len(self.appointments) + len(self.encounters) + len(self.observations) + len(self.medications)
+
+
+class RegistrationHistoryIn(HistoryIn):
+    outreach: list[OutreachHistoryIn] = Field(default_factory=list, max_length=MAX_ITEMS)
+
+
+def check_history_against(h: HistoryIn, programmes: set[str], birth: date) -> None:
+    """Cross-field rules shared by registration and later history additions."""
+    for a in h.appointments:
+        if a.programme not in programmes:
+            raise ValueError(f"an appointment for '{a.programme}' needs that condition to be registered")
+    for e in h.encounters:
+        if e.encounter_type != "acute" and e.encounter_type.removeprefix("review_") not in programmes:
+            raise ValueError(f"a {e.encounter_type} visit needs that condition to be registered")
+    dates = ([a.scheduled_for.date() for a in h.appointments] + [e.start_at.date() for e in h.encounters]
+             + [o.effective_at.date() for o in h.observations] + [x.start_date for x in h.medications])
+    if any(d < birth for d in dates):
+        raise ValueError("history cannot be dated before the patient's birth")
+
+
+class PatientRegistration(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    submission_id: str = Field(pattern=SUBMISSION_ID,
+                               description="Client-generated UUID; resubmitting the same id never "
+                                           "creates a second patient")
+    given_name: str = Field(pattern=NAME_PATTERN)
+    family_name: str = Field(pattern=NAME_PATTERN)
+    birth_date: date
+    sex: Literal["female", "male"]
+    deprivation_quintile: int = Field(ge=1, le=5, description="1 = least, 5 = most deprived area")
+    preferred_language: str = Field(default="en", pattern=r"^[a-z]{2,3}$")
+    registered_on: date
+    conditions: list[ConditionIn] = Field(min_length=1, max_length=2)
+    history: RegistrationHistoryIn = Field(default_factory=RegistrationHistoryIn)
+    allow_possible_duplicate: bool = False
+
+    @model_validator(mode="after")
+    def _consistency(self) -> PatientRegistration:
+        today = _now().date()
+        b = self.birth_date
+        age = today.year - b.year - ((today.month, today.day) < (b.month, b.day))
+        if not 18 <= age <= 110:
+            raise ValueError("patients must be aged 18-110")
+        if not b <= self.registered_on <= today:
+            raise ValueError("registered_on must be between birth_date and today")
+        programmes = [c.programme for c in self.conditions]
+        if len(set(programmes)) != len(programmes):
+            raise ValueError("each condition may be listed once")
+        if any(c.onset_date < b for c in self.conditions):
+            raise ValueError("a condition cannot start before birth")
+        check_history_against(self.history, set(programmes), b)
+        for o in self.history.outreach:
+            if o.programme not in programmes:
+                raise ValueError(f"outreach for '{o.programme}' needs that condition to be registered")
+            if o.attempted_at.date() < b:
+                raise ValueError("history cannot be dated before the patient's birth")
+        return self
+
+
+class HistoryAddition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    submission_id: str = Field(pattern=SUBMISSION_ID)
+    history: HistoryIn
+
+    @model_validator(mode="after")
+    def _not_empty(self) -> HistoryAddition:
+        if self.history.count() == 0:
+            raise ValueError("add at least one history entry")
+        return self
+
+
+ScoreReason = Literal["no_review_history", "prediction_time_not_reached",
+                      "history_recorded_after_prediction_time", "condition_recorded_after_prediction_time",
+                      "completed_before_prediction", "outside_study_period", "patient_left_care",
+                      "superseded", "not_registered_in_app", "scoring_error"]
+
+
+class ScoreAvailability(BaseModel):
+    programme: str
+    episode_id: str | None
+    due_date: date | None
+    prediction_at: datetime | None
+    status: Literal["scored", "already_scored", "ready_to_score", "unavailable"]
+    reason: ScoreReason | None = None
+    message: str
+    risk_score_id: int | None = None
+    probability: float | None = None
+    risk_tier: Tier | None = None
+    model_version: str | None = None
+    scored_at: datetime | None = None
+
+
+class OnboardingEpisode(BaseModel):
+    episode_id: str
+    programme: str
+    index_event_at: datetime
+    due_date: date
+    prediction_at: datetime
+    eligible: bool
+    ineligible_reason: str | None
+
+
+class OnboardingResult(BaseModel):
+    patient_id: str
+    synthetic_mrn: str
+    created: bool = Field(description="False when this submission was already processed (safe replay)")
+    history_counts: dict[str, int]
+    recorded_at: datetime
+    episodes: list[OnboardingEpisode]
+    score_status: list[ScoreAvailability]
+    notes: list[str]
+
+
+class ScoreStatusOut(BaseModel):
+    patient_id: str
+    registered_in_app: bool
+    evaluated_at: datetime
+    score_status: list[ScoreAvailability]
+
+
+class PatientListItem(BaseModel):
+    patient: PatientSummary
+    registered_in_app: bool
+    programmes: list[str]
+    registered_on: date
+    next_due_date: date | None

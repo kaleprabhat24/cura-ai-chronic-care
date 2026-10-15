@@ -24,7 +24,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from cura_api import models as m
-from cura_api.api.common import latest_run, score_context
+from cura_api.api.common import effective_scores, score_context
 from cura_ml.synth import catalog as cat
 
 NS = uuid.UUID("6f1c2f9e-1d7a-4c3b-9a43-6f7a2e0c5b11")
@@ -164,14 +164,15 @@ def build_bundle(session: Session, patient_id: str, as_of: date) -> dict[str, An
             "effectivePeriod": {"start": _d(x.start_date), "end": _d(x.end_date)},
             "dateAsserted": _ts(x.recorded_at),
         })
-    run = latest_run(session)
-    if run is not None:
-        rows = session.execute(select(m.RiskScore, m.FollowupEpisode, m.EpisodeOutcome)
-                               .join(m.FollowupEpisode, m.FollowupEpisode.id == m.RiskScore.episode_id)
-                               .join(m.EpisodeOutcome, m.EpisodeOutcome.episode_id == m.RiskScore.episode_id)
-                               .where(m.RiskScore.patient_id == p.id,
-                                      m.RiskScore.scoring_run_id == run.id)).all()
+    current = effective_scores(session, [e.id for e in session.execute(
+        select(m.FollowupEpisode).where(m.FollowupEpisode.patient_id == p.id)).scalars()])
+    if current:
+        runs = {r.id: r for r in session.execute(select(m.ScoringRun).where(
+            m.ScoringRun.id.in_({x.scoring_run_id for x in current.values()}))).scalars()}
+        rows = [(r, session.get(m.FollowupEpisode, r.episode_id), session.get(m.EpisodeOutcome, r.episode_id))
+                for r in current.values()]
         for r, ep, out in rows:
+            run = runs[r.scoring_run_id]
             ctx = score_context(ep, out, r, as_of)
             add("RiskAssessment", f"rs_{r.id}", {
                 "identifier": [{"system": "urn:cura-ai:risk-score", "value": str(r.id)}],

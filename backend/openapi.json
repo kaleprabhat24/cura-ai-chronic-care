@@ -599,6 +599,732 @@
         }
       }
     },
+    "/api/v1/patients": {
+      "get": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Patient list and search",
+        "operationId": "list_patients_api_v1_patients_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "name, MRN or patient id",
+              "title": "Q"
+            },
+            "description": "name, MRN or patient id"
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "registered",
+                "synthetic"
+              ],
+              "type": "string",
+              "description": "registered = added in Cura AI",
+              "default": "all",
+              "title": "Origin"
+            },
+            "description": "registered = added in Cura AI"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "name",
+                "recently_registered"
+              ],
+              "type": "string",
+              "default": "name",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "1-based page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PatientListItem_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Register a fictional patient with conditions and longitudinal history",
+        "operationId": "register_patient_api_v1_patients_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientRegistration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Possible duplicate or conflicting record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Submission already processed (safe replay)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/history": {
+      "post": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Add clinical-history entries to a patient",
+        "operationId": "add_history_api_v1_patients__patient_id__history_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HistoryAddition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Submission already processed (safe replay)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/score-status": {
+      "get": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Why a registered patient does or does not have a risk score (read-only)",
+        "operationId": "get_score_status_api_v1_patients__patient_id__score_status_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreStatusOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/score": {
+      "post": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Score a registered patient's follow-ups whose prediction time has arrived",
+        "operationId": "post_score_api_v1_patients__patient_id__score_post",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreStatusOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Possible duplicate or conflicting record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/patients/{patient_id}": {
       "get": {
         "tags": [
@@ -3199,6 +3925,43 @@
         ],
         "title": "AppUserOut"
       },
+      "AppointmentIn": {
+        "properties": {
+          "programme": {
+            "type": "string",
+            "enum": [
+              "t2d",
+              "htn"
+            ],
+            "title": "Programme"
+          },
+          "scheduled_for": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduled For",
+            "description": "Appointment date and time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "booked",
+              "attended",
+              "no_show",
+              "cancelled_patient",
+              "cancelled_clinic"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "programme",
+          "scheduled_for",
+          "status"
+        ],
+        "title": "AppointmentIn"
+      },
       "AuditEventOut": {
         "properties": {
           "id": {
@@ -3255,6 +4018,30 @@
           "details"
         ],
         "title": "AuditEventOut"
+      },
+      "ConditionIn": {
+        "properties": {
+          "programme": {
+            "type": "string",
+            "enum": [
+              "t2d",
+              "htn"
+            ],
+            "title": "Programme"
+          },
+          "onset_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Onset Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "programme",
+          "onset_date"
+        ],
+        "title": "ConditionIn"
       },
       "ConditionOut": {
         "properties": {
@@ -3529,6 +4316,38 @@
           "latest_scoring_run"
         ],
         "title": "DataQuality"
+      },
+      "EncounterIn": {
+        "properties": {
+          "encounter_type": {
+            "type": "string",
+            "enum": [
+              "review_t2d",
+              "review_htn",
+              "acute"
+            ],
+            "title": "Encounter Type"
+          },
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start At"
+          },
+          "duration_minutes": {
+            "type": "integer",
+            "maximum": 240.0,
+            "minimum": 5.0,
+            "title": "Duration Minutes",
+            "default": 20
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "encounter_type",
+          "start_at"
+        ],
+        "title": "EncounterIn"
       },
       "EpisodeOut": {
         "properties": {
@@ -3894,6 +4713,64 @@
         ],
         "title": "Health"
       },
+      "HistoryAddition": {
+        "properties": {
+          "submission_id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F-]{32,36}$",
+            "title": "Submission Id"
+          },
+          "history": {
+            "$ref": "#/components/schemas/HistoryIn"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "submission_id",
+          "history"
+        ],
+        "title": "HistoryAddition"
+      },
+      "HistoryIn": {
+        "properties": {
+          "appointments": {
+            "items": {
+              "$ref": "#/components/schemas/AppointmentIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Appointments"
+          },
+          "encounters": {
+            "items": {
+              "$ref": "#/components/schemas/EncounterIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Encounters"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Observations"
+          },
+          "medications": {
+            "items": {
+              "$ref": "#/components/schemas/MedicationIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Medications"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "HistoryIn"
+      },
       "Me": {
         "properties": {
           "user_id": {
@@ -3927,6 +4804,49 @@
           "auth_mode"
         ],
         "title": "Me"
+      },
+      "MedicationIn": {
+        "properties": {
+          "medication": {
+            "type": "string",
+            "enum": [
+              "metformin",
+              "glipizide",
+              "empagliflozin",
+              "insulin_glargine",
+              "atorvastatin",
+              "lisinopril",
+              "amlodipine",
+              "hydrochlorothiazide"
+            ],
+            "title": "Medication"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date",
+            "description": "Set when the medicine was stopped"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "medication",
+          "start_date"
+        ],
+        "title": "MedicationIn"
       },
       "MedicationOut": {
         "properties": {
@@ -4176,6 +5096,45 @@
         ],
         "title": "ModelInfo"
       },
+      "ObservationIn": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "hba1c",
+              "sbp",
+              "dbp",
+              "weight",
+              "heart_rate"
+            ],
+            "title": "Kind"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "effective_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effective At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "value",
+          "unit",
+          "effective_at"
+        ],
+        "title": "ObservationIn"
+      },
       "ObservationOut": {
         "properties": {
           "provenance": {
@@ -4226,6 +5185,121 @@
           "recorded_at"
         ],
         "title": "ObservationOut"
+      },
+      "OnboardingEpisode": {
+        "properties": {
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "programme": {
+            "type": "string",
+            "title": "Programme"
+          },
+          "index_event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Index Event At"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "prediction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Prediction At"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "ineligible_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ineligible Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode_id",
+          "programme",
+          "index_event_at",
+          "due_date",
+          "prediction_at",
+          "eligible",
+          "ineligible_reason"
+        ],
+        "title": "OnboardingEpisode"
+      },
+      "OnboardingResult": {
+        "properties": {
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "synthetic_mrn": {
+            "type": "string",
+            "title": "Synthetic Mrn"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created",
+            "description": "False when this submission was already processed (safe replay)"
+          },
+          "history_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "History Counts"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/OnboardingEpisode"
+            },
+            "type": "array",
+            "title": "Episodes"
+          },
+          "score_status": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreAvailability"
+            },
+            "type": "array",
+            "title": "Score Status"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "patient_id",
+          "synthetic_mrn",
+          "created",
+          "history_counts",
+          "recorded_at",
+          "episodes",
+          "score_status",
+          "notes"
+        ],
+        "title": "OnboardingResult"
       },
       "OutcomesSummary": {
         "properties": {
@@ -4417,6 +5491,96 @@
           "outcome"
         ],
         "title": "OutreachCreate"
+      },
+      "OutreachHistoryIn": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "sms",
+              "letter",
+              "email",
+              "in_person"
+            ],
+            "title": "Channel"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "no_answer",
+              "left_message",
+              "reached_booked",
+              "reached_declined",
+              "reached_already_done",
+              "wrong_number",
+              "other"
+            ],
+            "title": "Outcome"
+          },
+          "attempted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Attempted At"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "none",
+              "retry",
+              "retry_later",
+              "book_appointment",
+              "await_response",
+              "update_contact_details",
+              "escalate",
+              "other"
+            ],
+            "title": "Next Action",
+            "default": "none"
+          },
+          "next_action_due": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action Due"
+          },
+          "programme": {
+            "type": "string",
+            "enum": [
+              "t2d",
+              "htn"
+            ],
+            "title": "Programme"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "channel",
+          "outcome",
+          "attempted_at",
+          "programme"
+        ],
+        "title": "OutreachHistoryIn",
+        "description": "A historical outreach attempt: the same rules as recording outreach, plus its programme and a\nrequired attempt time."
       },
       "OutreachListItem": {
         "properties": {
@@ -4769,6 +5933,42 @@
         ],
         "title": "Page[OutreachListItem]"
       },
+      "Page_PatientListItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PatientListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_pages"
+        ],
+        "title": "Page[PatientListItem]"
+      },
       "Page_ScoringRunOut_": {
         "properties": {
           "items": {
@@ -4862,6 +6062,50 @@
           "counts"
         ],
         "title": "PatientDetail"
+      },
+      "PatientListItem": {
+        "properties": {
+          "patient": {
+            "$ref": "#/components/schemas/PatientSummary"
+          },
+          "registered_in_app": {
+            "type": "boolean",
+            "title": "Registered In App"
+          },
+          "programmes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Programmes"
+          },
+          "registered_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Registered On"
+          },
+          "next_due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "patient",
+          "registered_in_app",
+          "programmes",
+          "registered_on",
+          "next_due_date"
+        ],
+        "title": "PatientListItem"
       },
       "PatientOut": {
         "properties": {
@@ -4959,6 +6203,87 @@
           "is_synthetic"
         ],
         "title": "PatientOut"
+      },
+      "PatientRegistration": {
+        "properties": {
+          "submission_id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F-]{32,36}$",
+            "title": "Submission Id",
+            "description": "Client-generated UUID; resubmitting the same id never creates a second patient"
+          },
+          "given_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z '\\-.]{0,79}$",
+            "title": "Given Name"
+          },
+          "family_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z '\\-.]{0,79}$",
+            "title": "Family Name"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "female",
+              "male"
+            ],
+            "title": "Sex"
+          },
+          "deprivation_quintile": {
+            "type": "integer",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Deprivation Quintile",
+            "description": "1 = least, 5 = most deprived area"
+          },
+          "preferred_language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}$",
+            "title": "Preferred Language",
+            "default": "en"
+          },
+          "registered_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Registered On"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionIn"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Conditions"
+          },
+          "history": {
+            "$ref": "#/components/schemas/RegistrationHistoryIn"
+          },
+          "allow_possible_duplicate": {
+            "type": "boolean",
+            "title": "Allow Possible Duplicate",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "submission_id",
+          "given_name",
+          "family_name",
+          "birth_date",
+          "sex",
+          "deprivation_quintile",
+          "registered_on",
+          "conditions"
+        ],
+        "title": "PatientRegistration"
       },
       "PatientSummary": {
         "properties": {
@@ -5141,6 +6466,53 @@
         ],
         "title": "RecordedOutcome"
       },
+      "RegistrationHistoryIn": {
+        "properties": {
+          "appointments": {
+            "items": {
+              "$ref": "#/components/schemas/AppointmentIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Appointments"
+          },
+          "encounters": {
+            "items": {
+              "$ref": "#/components/schemas/EncounterIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Encounters"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Observations"
+          },
+          "medications": {
+            "items": {
+              "$ref": "#/components/schemas/MedicationIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Medications"
+          },
+          "outreach": {
+            "items": {
+              "$ref": "#/components/schemas/OutreachHistoryIn"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Outreach"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RegistrationHistoryIn"
+      },
       "RiskScoreDetail": {
         "properties": {
           "provenance": {
@@ -5313,6 +6685,157 @@
         ],
         "title": "RiskScoreHistoryItem"
       },
+      "ScoreAvailability": {
+        "properties": {
+          "programme": {
+            "type": "string",
+            "title": "Programme"
+          },
+          "episode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "prediction_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prediction At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scored",
+              "already_scored",
+              "ready_to_score",
+              "unavailable"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "no_review_history",
+                  "prediction_time_not_reached",
+                  "history_recorded_after_prediction_time",
+                  "condition_recorded_after_prediction_time",
+                  "completed_before_prediction",
+                  "outside_study_period",
+                  "patient_left_care",
+                  "superseded",
+                  "not_registered_in_app",
+                  "scoring_error"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "risk_score_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Score Id"
+          },
+          "probability": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Probability"
+          },
+          "risk_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Tier"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "scored_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scored At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "programme",
+          "episode_id",
+          "due_date",
+          "prediction_at",
+          "status",
+          "message"
+        ],
+        "title": "ScoreAvailability"
+      },
       "ScoreContext": {
         "properties": {
           "as_of": {
@@ -5391,6 +6914,38 @@
         ],
         "title": "ScoreContext",
         "description": "How to read a score for this episode at the data cutoff (`as_of`).\n\n* follow_up_status \u2014 recorded state of the follow-up: upcoming (before due date),\n  due_in_grace_window (past due, 30-day completion window still open), overdue_unresolved (not\n  completed by the end of the window: an observed outcome needing operational follow-up),\n  completed, censored, not_eligible.\n* score_status \u2014 predictive (outcome not yet known, so the probability is a live prediction),\n  historical (the outcome window has closed or the episode is resolved; the probability is a past\n  prediction kept for provenance), no_score."
+      },
+      "ScoreStatusOut": {
+        "properties": {
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "registered_in_app": {
+            "type": "boolean",
+            "title": "Registered In App"
+          },
+          "evaluated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Evaluated At"
+          },
+          "score_status": {
+            "items": {
+              "$ref": "#/components/schemas/ScoreAvailability"
+            },
+            "type": "array",
+            "title": "Score Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "patient_id",
+          "registered_in_app",
+          "evaluated_at",
+          "score_status"
+        ],
+        "title": "ScoreStatusOut"
       },
       "ScoringRunOut": {
         "properties": {

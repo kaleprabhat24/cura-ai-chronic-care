@@ -20,6 +20,11 @@ from cura_api.errors import ERROR_RESPONSES, ApiError, ErrorResponse
 from cura_ml.manifest import data_fingerprint, read_manifest
 
 router = APIRouter(responses=ERROR_RESPONSES)
+
+
+def not_app(column, prefix: str):
+    """True for rows loaded from the synthetic dataset, False for rows entered in Cura AI."""
+    return ~column.like(f"{prefix}\\_app\\_%", escape="\\")
 VERSION = re.compile(r"^[A-Za-z0-9._-]{1,60}$")
 NOT_FOUND = {404: {"model": ErrorResponse, "description": "Not found"}}
 DISCLAIMER = ("Synthetic-data evaluation, not clinical validation. The model predicts follow-up "
@@ -200,7 +205,7 @@ def data_quality(request: Request, session: SessionDep,
     check("latest_scoring_run_matches_dataset", run_matches,
           "latest scoring run used the loaded dataset")
     n_eligible = session.execute(select(func.count()).select_from(m.FollowupEpisode).where(
-        m.FollowupEpisode.eligible.is_(True))).scalar_one()
+        m.FollowupEpisode.eligible.is_(True), not_app(m.FollowupEpisode.id, "ep"))).scalar_one()
     scored = 0
     if run:
         scored = session.execute(select(func.count(func.distinct(m.RiskScore.episode_id)))
@@ -216,11 +221,19 @@ def data_quality(request: Request, session: SessionDep,
               "episode_outcomes": m.EpisodeOutcome}
     source = {"followup_episodes": "cohort/followup_episodes.parquet",
               "episode_outcomes": "outcomes/episode_labels.parquet"}
+    prefixes = {"patients": "pt", "conditions": "cd", "appointments": "ap", "encounters": "en",
+                "observations": "ob", "medication_statements": "ms", "followup_episodes": "ep",
+                "episode_outcomes": "ep"}
     for name, model in tables.items():
-        db_n = session.execute(select(func.count()).select_from(model)).scalar_one()
+        key_col = model.episode_id if model is m.EpisodeOutcome else model.id
+        db_n = session.execute(select(func.count()).select_from(model)
+                               .where(not_app(key_col, prefixes[name]))).scalar_one()
+        app_n = session.execute(select(func.count()).select_from(model)
+                                .where(~not_app(key_col, prefixes[name]))).scalar_one()
         key = source.get(name, f"records/{name}.parquet")
         src_n = manifest["files"][key]["rows"] if manifest and key in manifest["files"] else None
-        table_counts[name] = {"database": db_n, "dataset_files": src_n}
+        # "database" counts rows loaded from the synthetic dataset; rows entered in Cura AI are separate
+        table_counts[name] = {"database": db_n, "dataset_files": src_n, "entered_in_app": app_n}
         if src_n is not None:
             check(f"row_count_{name}", db_n == src_n, f"database {db_n:,} vs files {src_n:,}")
     hist = session.execute(select(func.count()).select_from(m.OutreachAttempt).where(

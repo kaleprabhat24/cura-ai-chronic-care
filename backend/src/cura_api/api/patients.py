@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal, get_args
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -16,9 +16,11 @@ from cura_api import models as m
 from cura_api import schemas as s
 from cura_api.api.common import (
     CONDITION_LABELS,
+    PATIENT_SCOPE,
     PageParams,
     SessionDep,
     age_at,
+    effective_scores,
     factor,
     follow_up_status,
     latest_load,
@@ -26,8 +28,10 @@ from cura_api.api.common import (
     patient_summary,
     prediction_summary,
     recorded_outcome,
+    reference_date,
     run_out,
     score_context,
+    today,
 )
 from cura_api.auth import CLINICAL, Principal
 from cura_api.db import utcnow
@@ -56,12 +60,7 @@ def _episode(session: Session, episode_id: str) -> tuple[m.FollowupEpisode, m.Ep
 
 
 def _latest_scores(session: Session, episode_ids: list[str]) -> dict[str, m.RiskScore]:
-    run = latest_run(session)
-    if run is None or not episode_ids:
-        return {}
-    rows = session.execute(select(m.RiskScore).where(m.RiskScore.scoring_run_id == run.id,
-                                                      m.RiskScore.episode_id.in_(episode_ids))).scalars()
-    return {r.episode_id: r for r in rows}
+    return effective_scores(session, episode_ids)
 
 
 def _episode_out(ep: m.FollowupEpisode, out: m.EpisodeOutcome, as_of: date,
@@ -79,10 +78,10 @@ def _episode_out(ep: m.FollowupEpisode, out: m.EpisodeOutcome, as_of: date,
 # ------------------------------------------------------------------------------------------ patients
 @router.get("/patients/{patient_id}", response_model=s.PatientDetail, tags=["patients"],
             summary="Patient profile (Patient 360)", responses=NOT_FOUND)
-def patient_detail(patient_id: str, session: SessionDep,
+def patient_detail(patient_id: str, request: Request, session: SessionDep,
                    _: Annotated[Principal, Depends(CLINICAL)]) -> s.PatientDetail:
-    as_of = latest_load(session).data_cutoff
     p = _patient(session, patient_id)
+    as_of = reference_date(p.id, latest_load(session).data_cutoff, today(request))
     conditions = session.execute(select(m.Condition).where(m.Condition.patient_id == p.id)
                                  .order_by(m.Condition.recorded_at)).scalars().all()
     eps = session.execute(select(m.FollowupEpisode, m.EpisodeOutcome)
@@ -234,10 +233,10 @@ def patient_outreach(patient_id: str, session: SessionDep,
 # ------------------------------------------------------------------------------------------ episodes
 @router.get("/episodes/{episode_id}", response_model=s.EpisodeOut, tags=["episodes"],
             summary="Follow-up episode with recorded outcome and latest prediction", responses=NOT_FOUND)
-def episode_detail(episode_id: str, session: SessionDep,
+def episode_detail(episode_id: str, request: Request, session: SessionDep,
                    _: Annotated[Principal, Depends(CLINICAL)]) -> s.EpisodeOut:
-    as_of = latest_load(session).data_cutoff
     ep, out = _episode(session, episode_id)
+    as_of = reference_date(ep.patient_id, latest_load(session).data_cutoff, today(request))
     return _episode_out(ep, out, as_of, _latest_scores(session, [ep.id]).get(ep.id))
 
 
@@ -255,15 +254,16 @@ def episode_scores(episode_id: str, session: SessionDep,
 
 @router.get("/risk-scores/{risk_score_id}", response_model=s.RiskScoreDetail, tags=["risk scores"],
             summary="Risk score with the model's feature explanation and provenance", responses=NOT_FOUND)
-def risk_score_detail(risk_score_id: int, session: SessionDep,
+def risk_score_detail(risk_score_id: int, request: Request, session: SessionDep,
                       _: Annotated[Principal, Depends(CLINICAL)]) -> s.RiskScoreDetail:
     r = session.get(m.RiskScore, risk_score_id)
     if r is None:
         raise ApiError(404, "not_found", f"Risk score {risk_score_id} not found.")
     run = session.get(m.ScoringRun, r.scoring_run_id)
-    as_of = latest_load(session).data_cutoff
     ep, out = _episode(session, r.episode_id)
+    as_of = reference_date(ep.patient_id, latest_load(session).data_cutoff, today(request))
     newest = latest_run(session)
+    current = effective_scores(session, [ep.id]).get(ep.id)
     feats = []
     for col, value in r.feature_snapshot.items():
         base = S.FEATURE_BY_NAME[S.base_feature(col)]
@@ -279,7 +279,9 @@ def risk_score_detail(risk_score_id: int, session: SessionDep,
                                   model_log_odds=e["model_log_odds"],
                                   factors=[factor(f) for f in e["factors"]], units=e["units"],
                                   note=e["note"]),
-        features=feats, run=run_out(run), is_latest_run=bool(newest and newest.id == run.id),
+        features=feats, run=run_out(run),
+        is_latest_run=bool((newest and newest.id == run.id)
+                           or (run.scope == PATIENT_SCOPE and current is not None and current.id == r.id)),
         score_context=score_context(ep, out, r, as_of),
         interpretation=("Simulated prediction from a model trained on synthetic data: the calibrated "
                         "probability that this follow-up is still incomplete 30 days after its due date. "
@@ -370,10 +372,10 @@ def list_outreach(
             summary="Export the patient's synthetic record as a FHIR R4-oriented Bundle (JSON)",
             responses={**NOT_FOUND, 200: {"content": {"application/fhir+json": {}},
                                           "description": "FHIR Bundle (type collection)"}})
-def export_fhir(patient_id: str, session: SessionDep,
+def export_fhir(patient_id: str, request: Request, session: SessionDep,
                 principal: Annotated[Principal, Depends(CLINICAL)]) -> JSONResponse:
-    as_of = latest_load(session).data_cutoff
     _patient(session, patient_id)
+    as_of = reference_date(patient_id, latest_load(session).data_cutoff, today(request))
     bundle = build_bundle(session, patient_id, as_of)
     counts = dict(Counter(e["resource"]["resourceType"] for e in bundle["entry"]))
     audit.record(session, principal.user_id, principal.role, "fhir.export", "patient", patient_id,

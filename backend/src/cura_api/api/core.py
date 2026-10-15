@@ -12,7 +12,15 @@ from sqlalchemy import and_, func, select, text
 from cura_api import __version__
 from cura_api import models as m
 from cura_api import schemas as s
-from cura_api.api.common import SessionDep, latest_load, latest_run, run_out
+from cura_api.api.common import (
+    SessionDep,
+    effective_run_id,
+    latest_load,
+    latest_run,
+    reference_date,
+    run_out,
+    today,
+)
 from cura_api.auth import ANY_ROLE, Principal
 from cura_api.errors import ERROR_RESPONSES
 
@@ -69,7 +77,8 @@ def me(principal: Annotated[Principal, Depends(ANY_ROLE)]) -> s.Me:
 
 @router.get("/dashboard/summary", response_model=s.DashboardSummary, tags=["dashboard"],
             summary="Cohort and worklist summary metrics")
-def dashboard(session: SessionDep, _: Annotated[Principal, Depends(ANY_ROLE)]) -> s.DashboardSummary:
+def dashboard(request: Request, session: SessionDep,
+              _: Annotated[Principal, Depends(ANY_ROLE)]) -> s.DashboardSummary:
     load = latest_load(session)
     as_of = load.data_cutoff
     run = latest_run(session)
@@ -77,26 +86,30 @@ def dashboard(session: SessionDep, _: Annotated[Principal, Depends(ANY_ROLE)]) -
     patients_total = session.execute(select(func.count()).select_from(m.Patient)).scalar_one()
     patients_active = session.execute(select(func.count()).select_from(m.Patient).where(
         m.Patient.death_date.is_(None), m.Patient.transfer_out_date.is_(None))).scalar_one()
-    open_q = (episode_base(m.FollowupEpisode.due_date, m.FollowupEpisode.window_end_date,
+    current_run = effective_run_id(run.id if run else None)
+    open_q = (episode_base(m.Patient.id.label("patient_id"), m.FollowupEpisode.due_date,
+                           m.FollowupEpisode.window_end_date,
                            m.FollowupEpisode.is_cold_start, m.RiskScore.risk_tier)
               .outerjoin(m.RiskScore, and_(m.RiskScore.episode_id == m.FollowupEpisode.id,
-                                           m.RiskScore.scoring_run_id == (run.id if run else -1)))
+                                           m.RiskScore.scoring_run_id == current_run))
               .where(open_episode_filter()))
     open_rows = session.execute(open_q).all()
     due_dates = [r.due_date for r in open_rows]
     by_tier: dict[str, int] = {"high": 0, "medium": 0, "low": 0}
     predictive: dict[str, int] = {"high": 0, "medium": 0, "low": 0}
     upcoming = grace = overdue_unresolved = 0
+    now_day = today(request)
     for r in open_rows:
+        day = reference_date(r.patient_id, as_of, now_day)
         if r.risk_tier:
             by_tier[r.risk_tier] += 1
-        if r.due_date > as_of:
+        if r.due_date > day:
             upcoming += 1
-        elif r.window_end_date >= as_of:
+        elif r.window_end_date >= day:
             grace += 1
         else:
             overdue_unresolved += 1
-        if r.risk_tier and r.window_end_date >= as_of:
+        if r.risk_tier and r.window_end_date >= day:
             predictive[r.risk_tier] += 1
     weeks = []
     for w in range(8):

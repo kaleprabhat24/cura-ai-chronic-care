@@ -8,7 +8,7 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import Depends, Query, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cura_api import models as m
@@ -54,9 +54,64 @@ def latest_load(session: Session) -> m.DatasetLoad:
     return load
 
 
+BATCH_SCOPES = ("eligible", "open")   # cohort-wide `cura-api score` runs
+PATIENT_SCOPE = "patient"              # per-patient runs for patients registered in the app
+APP_PATIENT_PREFIX = "pt_app_"
+
+
 def latest_run(session: Session) -> m.ScoringRun | None:
-    return session.execute(select(m.ScoringRun).where(m.ScoringRun.status == "succeeded")
+    """The latest cohort-wide (batch) scoring run. Per-patient runs never replace it."""
+    return session.execute(select(m.ScoringRun).where(m.ScoringRun.status == "succeeded",
+                                                      m.ScoringRun.scope.in_(BATCH_SCOPES))
                            .order_by(m.ScoringRun.id.desc())).scalars().first()
+
+
+def is_app_patient(patient_id: str) -> bool:
+    return patient_id.startswith(APP_PATIENT_PREFIX)
+
+
+def today(request: Request) -> date:
+    """Current UTC date from the application clock (overridable in tests)."""
+    return request.app.state.clock().date()
+
+
+def reference_date(patient_id: str, dataset_as_of: date, today_: date) -> date:
+    """The date against which an episode's status is judged. The synthetic cohort lives at the dataset
+    cutoff ("simulated today"); patients registered in the app live in real time."""
+    return max(dataset_as_of, today_) if is_app_patient(patient_id) else dataset_as_of
+
+
+def effective_run_id(batch_run_id: int | None):
+    """SQL expression (correlated on FollowupEpisode) for the scoring run whose score is current for an
+    episode: the newest per-patient run that scored it (patients registered in the app), otherwise the
+    latest batch run (synthetic cohort). Older snapshots stay stored as history."""
+    newest_patient_run = (
+        select(func.max(m.RiskScore.scoring_run_id))
+        .join(m.ScoringRun, m.ScoringRun.id == m.RiskScore.scoring_run_id)
+        .where(m.RiskScore.episode_id == m.FollowupEpisode.id, m.ScoringRun.scope == PATIENT_SCOPE,
+               m.ScoringRun.status == "succeeded")
+        .correlate(m.FollowupEpisode).scalar_subquery())
+    return func.coalesce(newest_patient_run, batch_run_id if batch_run_id is not None else -1)
+
+
+def effective_scores(session: Session, episode_ids: list[str]) -> dict[str, m.RiskScore]:
+    """Current score per episode (same rule as `effective_run_id`), for a handful of episodes."""
+    if not episode_ids:
+        return {}
+    batch = latest_run(session)
+    out: dict[str, m.RiskScore] = {}
+    if batch is not None:
+        for r in session.execute(select(m.RiskScore).where(m.RiskScore.scoring_run_id == batch.id,
+                                                            m.RiskScore.episode_id.in_(episode_ids))).scalars():
+            out[r.episode_id] = r
+    query = (select(m.RiskScore).join(m.ScoringRun, m.ScoringRun.id == m.RiskScore.scoring_run_id)
+             .where(m.RiskScore.episode_id.in_(episode_ids), m.ScoringRun.scope == PATIENT_SCOPE,
+                    m.ScoringRun.status == "succeeded")
+             .order_by(m.RiskScore.scoring_run_id))
+    rows = session.execute(query).scalars()
+    for r in rows:
+        out[r.episode_id] = r
+    return out
 
 
 def age_at(birth: date, on: date) -> int:
