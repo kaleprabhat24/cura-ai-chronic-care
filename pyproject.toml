@@ -1,28 +1,29 @@
 # Cura AI — uv workspace root.
 # This root is a virtual (non-package) project: it only ties the workspace members together
-# and holds shared developer tooling. Each member (ml/, later backend/) has its own pyproject.
+# and holds shared developer tooling. Each member (ml/, backend/) has its own pyproject.
 
 [project]
 name = "cura-ai"
 version = "0.1.0"
 description = "Cura AI — chronic-disease follow-up risk prioritisation (synthetic data only)"
 requires-python = ">=3.12"
-dependencies = ["cura-ml"]
+dependencies = ["cura-ml", "cura-api"]
 
 [dependency-groups]
-dev = ["pytest>=8.3", "ruff>=0.6"]
+dev = ["pytest>=8.3", "ruff>=0.6", "httpx>=0.27"]
 
 [tool.uv]
 package = false
 
 [tool.uv.workspace]
-members = ["ml"]
+members = ["ml", "backend"]
 
 [tool.uv.sources]
 cura-ml = { workspace = true }
+cura-api = { workspace = true }
 
 [tool.pytest.ini_options]
-testpaths = ["ml/tests"]
+testpaths = ["ml/tests", "backend/tests"]
 addopts = "-ra"
 
 [tool.ruff]
@@ -33,4 +34,4 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["cura_ml"]
+known-first-party = ["cura_ml", "cura_api"]

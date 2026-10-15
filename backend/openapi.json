@@ -1,0 +1,4440 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cura AI API",
+    "description": "\nBackend for **Cura AI**, a chronic-disease follow-up prioritisation demo. **All data is synthetic.**\n\n* Risk scores are *simulated predictions* produced by batch scoring runs with the saved model bundle.\n  They are never recomputed when a page is opened.\n* Every payload labels its provenance: `simulated_prediction`, `recorded_synthetic_clinical`,\n  `recorded_synthetic_outcome` or `recorded_outreach_outcome`.\n* **Authentication:** only a local development mode exists (`X-Dev-User` / `X-Dev-Role` headers;\n  roles `coordinator`, `analyst`, `admin`). It refuses to run in production. Production\n  authentication is not implemented yet.\n* Errors have the shape `{\"error\": {\"code\", \"message\", \"details\"}}`.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Service health",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Current (development) identity",
+        "operationId": "me_api_v1_me_get",
+        "parameters": [
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Cohort and worklist summary metrics",
+        "operationId": "dashboard_api_v1_dashboard_summary_get",
+        "parameters": [
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/worklist": {
+      "get": {
+        "tags": [
+          "worklist"
+        ],
+        "summary": "Follow-up worklist",
+        "operationId": "worklist_api_v1_worklist_get",
+        "parameters": [
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "priority",
+                "probability",
+                "due_date",
+                "last_contact",
+                "patient_name"
+              ],
+              "type": "string",
+              "description": "priority = model rank in the latest scoring run",
+              "default": "priority",
+              "title": "Sort"
+            },
+            "description": "priority = model rank in the latest scoring run"
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "default depends on sort",
+              "title": "Order"
+            },
+            "description": "default depends on sort"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "search name, MRN or patient id",
+              "title": "Q"
+            },
+            "description": "search name, MRN or patient id"
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "repeatable",
+              "title": "Tier"
+            },
+            "description": "repeatable"
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "t2d",
+                      "htn"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "programme: t2d | htn",
+              "title": "Condition"
+            },
+            "description": "programme: t2d | htn"
+          },
+          {
+            "name": "due_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Due From"
+            }
+          },
+          {
+            "name": "due_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Due To"
+            }
+          },
+          {
+            "name": "overdue",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Overdue"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "open",
+                "all"
+              ],
+              "type": "string",
+              "description": "open = awaiting completion at the data cutoff",
+              "default": "open",
+              "title": "Status"
+            },
+            "description": "open = awaiting completion at the data cutoff"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "1-based page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorklistPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}": {
+      "get": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Patient profile (Patient 360)",
+        "operationId": "patient_detail_api_v1_patients__patient_id__get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/timeline": {
+      "get": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Unified longitudinal timeline",
+        "operationId": "timeline_api_v1_patients__patient_id__timeline_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "appointment",
+                      "encounter",
+                      "observation",
+                      "medication_start",
+                      "medication_stop",
+                      "outreach",
+                      "risk_score",
+                      "followup_due"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "repeatable filter",
+              "title": "Types"
+            },
+            "description": "repeatable filter"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 300,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Order"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Timeline"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/outreach-attempts": {
+      "get": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Outreach history for a patient",
+        "operationId": "patient_outreach_api_v1_patients__patient_id__outreach_attempts_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OutreachOut"
+                  },
+                  "title": "Response Patient Outreach Api V1 Patients  Patient Id  Outreach Attempts Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/episodes/{episode_id}": {
+      "get": {
+        "tags": [
+          "episodes"
+        ],
+        "summary": "Follow-up episode with recorded outcome and latest prediction",
+        "operationId": "episode_detail_api_v1_episodes__episode_id__get",
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodeOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/episodes/{episode_id}/risk-scores": {
+      "get": {
+        "tags": [
+          "risk scores"
+        ],
+        "summary": "All scoring snapshots for an episode",
+        "operationId": "episode_scores_api_v1_episodes__episode_id__risk_scores_get",
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiskScoreHistoryItem"
+                  },
+                  "title": "Response Episode Scores Api V1 Episodes  Episode Id  Risk Scores Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/risk-scores/{risk_score_id}": {
+      "get": {
+        "tags": [
+          "risk scores"
+        ],
+        "summary": "Risk score with the model's feature explanation and provenance",
+        "operationId": "risk_score_detail_api_v1_risk_scores__risk_score_id__get",
+        "parameters": [
+          {
+            "name": "risk_score_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Risk Score Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskScoreDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/episodes/{episode_id}/outreach-attempts": {
+      "get": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Outreach history for an episode",
+        "operationId": "episode_outreach_api_v1_episodes__episode_id__outreach_attempts_get",
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OutreachOut"
+                  },
+                  "title": "Response Episode Outreach Api V1 Episodes  Episode Id  Outreach Attempts Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Record an outreach attempt and its outcome",
+        "operationId": "create_outreach_api_v1_episodes__episode_id__outreach_attempts_post",
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutreachCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutreachOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Episode not eligible for outreach"
+          }
+        }
+      }
+    },
+    "/api/v1/outreach/outcomes": {
+      "get": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Aggregate outreach outcomes and follow-up completion statistics",
+        "operationId": "outcomes_api_v1_outreach_outcomes_get",
+        "parameters": [
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomesSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/current": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Model version used for scoring, with evaluation results",
+        "operationId": "model_current_api_v1_models_current_get",
+        "parameters": [
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/{model_version}": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "A saved model version",
+        "operationId": "model_version_api_v1_models__model_version__get",
+        "parameters": [
+          {
+            "name": "model_version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Model Version"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scoring-runs": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Scoring runs (newest first)",
+        "operationId": "scoring_runs_api_v1_scoring_runs_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "1-based page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ScoringRunOut_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scoring-runs/{run_id}": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "One scoring run",
+        "operationId": "scoring_run_api_v1_scoring_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoringRunOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/data-quality": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Dataset, database and scoring consistency checks",
+        "operationId": "data_quality_api_v1_data_quality_get",
+        "parameters": [
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataQuality"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audit-events": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Audit log (newest first)",
+        "operationId": "audit_events_api_v1_audit_events_get",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 48
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "1-based page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Development auth only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Development auth only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AuditEventOut_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditEventOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "actor_id": {
+            "type": "string",
+            "title": "Actor Id"
+          },
+          "actor_role": {
+            "type": "string",
+            "title": "Actor Role"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "occurred_at",
+          "actor_id",
+          "actor_role",
+          "action",
+          "entity_type",
+          "entity_id",
+          "details"
+        ],
+        "title": "AuditEventOut"
+      },
+      "ConditionOut": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_clinical",
+            "title": "Provenance",
+            "default": "recorded_synthetic_clinical"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code_system": {
+            "type": "string",
+            "title": "Code System"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "onset_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Onset Date"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          },
+          "clinical_status": {
+            "type": "string",
+            "title": "Clinical Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code_system",
+          "code",
+          "display",
+          "onset_date",
+          "recorded_at",
+          "clinical_status"
+        ],
+        "title": "ConditionOut"
+      },
+      "DashboardSummary": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of",
+            "description": "Data cutoff of the loaded synthetic dataset ('simulated today')"
+          },
+          "data_fingerprint": {
+            "type": "string",
+            "title": "Data Fingerprint"
+          },
+          "patients_total": {
+            "type": "integer",
+            "title": "Patients Total"
+          },
+          "patients_active": {
+            "type": "integer",
+            "title": "Patients Active"
+          },
+          "open_episodes": {
+            "type": "integer",
+            "title": "Open Episodes"
+          },
+          "open_by_tier": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Open By Tier"
+          },
+          "open_unscored": {
+            "type": "integer",
+            "title": "Open Unscored"
+          },
+          "overdue_open_episodes": {
+            "type": "integer",
+            "title": "Overdue Open Episodes"
+          },
+          "due_next_14_days": {
+            "type": "integer",
+            "title": "Due Next 14 Days"
+          },
+          "due_next_30_days": {
+            "type": "integer",
+            "title": "Due Next 30 Days"
+          },
+          "due_by_week": {
+            "items": {
+              "$ref": "#/components/schemas/WeekLoad"
+            },
+            "type": "array",
+            "title": "Due By Week"
+          },
+          "outreach_historical_total": {
+            "type": "integer",
+            "title": "Outreach Historical Total"
+          },
+          "outreach_app_total": {
+            "type": "integer",
+            "title": "Outreach App Total"
+          },
+          "outreach_last_30_days": {
+            "type": "integer",
+            "title": "Outreach Last 30 Days"
+          },
+          "completion_last_12_months": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Completion Last 12 Months"
+          },
+          "latest_scoring_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoringRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "data_fingerprint",
+          "patients_total",
+          "patients_active",
+          "open_episodes",
+          "open_by_tier",
+          "open_unscored",
+          "overdue_open_episodes",
+          "due_next_14_days",
+          "due_next_30_days",
+          "due_by_week",
+          "outreach_historical_total",
+          "outreach_app_total",
+          "outreach_last_30_days",
+          "completion_last_12_months",
+          "latest_scoring_run",
+          "notes"
+        ],
+        "title": "DashboardSummary"
+      },
+      "DataQuality": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "warning"
+            ],
+            "title": "Status"
+          },
+          "checks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "dataset": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset"
+          },
+          "table_counts": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Table Counts"
+          },
+          "label_status_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Label Status Counts"
+          },
+          "feature_missingness": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Feature Missingness"
+          },
+          "latest_scoring_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScoringRunOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "checks",
+          "dataset",
+          "table_counts",
+          "label_status_counts",
+          "feature_missingness",
+          "latest_scoring_run"
+        ],
+        "title": "DataQuality"
+      },
+      "EpisodeOut": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_clinical",
+            "title": "Provenance",
+            "default": "recorded_synthetic_clinical"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "programme": {
+            "type": "string",
+            "title": "Programme"
+          },
+          "condition": {
+            "type": "string",
+            "title": "Condition"
+          },
+          "index_event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Index Event At"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "prediction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Prediction At"
+          },
+          "window_end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Window End Date"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "ineligible_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ineligible Reason"
+          },
+          "is_cold_start": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Cold Start"
+          },
+          "recorded_outcome": {
+            "$ref": "#/components/schemas/RecordedOutcome"
+          },
+          "latest_prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "patient_id",
+          "programme",
+          "condition",
+          "index_event_at",
+          "due_date",
+          "prediction_at",
+          "window_end_date",
+          "eligible",
+          "ineligible_reason",
+          "is_cold_start",
+          "recorded_outcome",
+          "latest_prediction"
+        ],
+        "title": "EpisodeOut"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorBody"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse"
+      },
+      "Explanation": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "title": "Method"
+          },
+          "base_log_odds": {
+            "type": "number",
+            "title": "Base Log Odds"
+          },
+          "model_log_odds": {
+            "type": "number",
+            "title": "Model Log Odds"
+          },
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Factors"
+          },
+          "units": {
+            "type": "string",
+            "title": "Units"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "method",
+          "base_log_odds",
+          "model_log_odds",
+          "factors",
+          "units",
+          "note"
+        ],
+        "title": "Explanation"
+      },
+      "Factor": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "value_text": {
+            "type": "string",
+            "title": "Value Text"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "recorded": {
+            "type": "boolean",
+            "title": "Recorded"
+          },
+          "contribution_log_odds": {
+            "type": "number",
+            "title": "Contribution Log Odds"
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "label",
+          "value",
+          "value_text",
+          "unit",
+          "recorded",
+          "contribution_log_odds",
+          "direction"
+        ],
+        "title": "Factor"
+      },
+      "FeatureValue": {
+        "properties": {
+          "column": {
+            "type": "string",
+            "title": "Column"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "column",
+          "label",
+          "unit",
+          "value"
+        ],
+        "title": "FeatureValue"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "auth_mode": {
+            "type": "string",
+            "title": "Auth Mode"
+          },
+          "production_auth_implemented": {
+            "type": "boolean",
+            "title": "Production Auth Implemented",
+            "default": false
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "title": "Database"
+          },
+          "dataset_loaded": {
+            "type": "boolean",
+            "title": "Dataset Loaded"
+          },
+          "model_bundle_available": {
+            "type": "boolean",
+            "title": "Model Bundle Available"
+          },
+          "latest_scoring_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Scoring Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "environment",
+          "auth_mode",
+          "database",
+          "dataset_loaded",
+          "model_bundle_available",
+          "latest_scoring_run_id"
+        ],
+        "title": "Health"
+      },
+      "Me": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "auth_mode": {
+            "type": "string",
+            "title": "Auth Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "role",
+          "auth_mode"
+        ],
+        "title": "Me"
+      },
+      "MedicationOut": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_clinical",
+            "title": "Provenance",
+            "default": "recorded_synthetic_clinical"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "drug_class": {
+            "type": "string",
+            "title": "Drug Class"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "display",
+          "drug_class",
+          "start_date",
+          "end_date",
+          "recorded_at"
+        ],
+        "title": "MedicationOut"
+      },
+      "ModelInfo": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "simulated_prediction",
+            "title": "Provenance",
+            "default": "simulated_prediction"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "model_type": {
+            "type": "string",
+            "title": "Model Type"
+          },
+          "calibration_method": {
+            "type": "string",
+            "title": "Calibration Method"
+          },
+          "feature_spec_version": {
+            "type": "string",
+            "title": "Feature Spec Version"
+          },
+          "tier_thresholds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Tier Thresholds"
+          },
+          "data_fingerprint": {
+            "type": "string",
+            "title": "Data Fingerprint"
+          },
+          "prediction_target": {
+            "type": "string",
+            "title": "Prediction Target"
+          },
+          "trained_on": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Trained On"
+          },
+          "calibrated_on": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Calibrated On"
+          },
+          "selection": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Selection"
+          },
+          "splits": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Splits"
+          },
+          "test_metrics": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Test Metrics"
+          },
+          "test_intervals": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Test Intervals"
+          },
+          "validation_metrics": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Validation Metrics"
+          },
+          "library_versions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Library Versions"
+          },
+          "synthetic_data_only": {
+            "type": "boolean",
+            "title": "Synthetic Data Only"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_version",
+          "model_type",
+          "calibration_method",
+          "feature_spec_version",
+          "tier_thresholds",
+          "data_fingerprint",
+          "prediction_target",
+          "trained_on",
+          "calibrated_on",
+          "selection",
+          "splits",
+          "test_metrics",
+          "test_intervals",
+          "validation_metrics",
+          "library_versions",
+          "synthetic_data_only",
+          "disclaimer"
+        ],
+        "title": "ModelInfo"
+      },
+      "ObservationOut": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_clinical",
+            "title": "Provenance",
+            "default": "recorded_synthetic_clinical"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "display": {
+            "type": "string",
+            "title": "Display"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "title": "Unit"
+          },
+          "effective_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Effective At"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "display",
+          "value",
+          "unit",
+          "effective_at",
+          "recorded_at"
+        ],
+        "title": "ObservationOut"
+      },
+      "OutcomesSummary": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "attempts_by_origin": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Attempts By Origin"
+          },
+          "attempts_by_outcome": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "integer"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Attempts By Outcome"
+          },
+          "attempts_by_channel": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Attempts By Channel"
+          },
+          "phone_contact_rate": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Phone Contact Rate"
+          },
+          "app_open_next_actions": {
+            "type": "integer",
+            "title": "App Open Next Actions"
+          },
+          "completion_by_year": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Completion By Year"
+          },
+          "completion_by_programme": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Completion By Programme"
+          },
+          "completion_by_outreach_exposure": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Completion By Outreach Exposure"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "attempts_by_origin",
+          "attempts_by_outcome",
+          "attempts_by_channel",
+          "phone_contact_rate",
+          "app_open_next_actions",
+          "completion_by_year",
+          "completion_by_programme",
+          "completion_by_outreach_exposure",
+          "notes"
+        ],
+        "title": "OutcomesSummary"
+      },
+      "OutreachCreate": {
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "phone",
+              "sms",
+              "letter",
+              "email",
+              "in_person"
+            ],
+            "title": "Channel"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "no_answer",
+              "left_message",
+              "reached_booked",
+              "reached_declined",
+              "reached_already_done",
+              "wrong_number",
+              "other"
+            ],
+            "title": "Outcome"
+          },
+          "attempted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempted At",
+            "description": "When the contact attempt happened (default: now). Must not be in the future."
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "none",
+              "retry",
+              "retry_later",
+              "book_appointment",
+              "await_response",
+              "update_contact_details",
+              "escalate",
+              "other"
+            ],
+            "title": "Next Action",
+            "default": "none"
+          },
+          "next_action_due": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action Due"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "channel",
+          "outcome"
+        ],
+        "title": "OutreachCreate"
+      },
+      "OutreachOut": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_outreach_outcome",
+            "title": "Provenance",
+            "default": "recorded_outreach_outcome"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "episode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
+          },
+          "programme": {
+            "type": "string",
+            "title": "Programme"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "next_action": {
+            "type": "string",
+            "title": "Next Action"
+          },
+          "next_action_due": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action Due"
+          },
+          "attempted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Attempted At"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          },
+          "recorded_by": {
+            "type": "string",
+            "title": "Recorded By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "patient_id",
+          "episode_id",
+          "programme",
+          "origin",
+          "purpose",
+          "channel",
+          "outcome",
+          "note",
+          "next_action",
+          "next_action_due",
+          "attempted_at",
+          "recorded_at",
+          "recorded_by"
+        ],
+        "title": "OutreachOut"
+      },
+      "OutreachSummary": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_outreach_outcome",
+            "title": "Provenance",
+            "default": "recorded_outreach_outcome"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "attempted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Attempted At"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "attempted_at",
+          "channel",
+          "outcome",
+          "origin"
+        ],
+        "title": "OutreachSummary"
+      },
+      "Page_AuditEventOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditEventOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_pages"
+        ],
+        "title": "Page[AuditEventOut]"
+      },
+      "Page_ScoringRunOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ScoringRunOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_pages"
+        ],
+        "title": "Page[ScoringRunOut]"
+      },
+      "PatientDetail": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientOut"
+          },
+          "conditions": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionOut"
+            },
+            "type": "array",
+            "title": "Conditions"
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/EpisodeOut"
+            },
+            "type": "array",
+            "title": "Episodes"
+          },
+          "active_medications": {
+            "items": {
+              "$ref": "#/components/schemas/MedicationOut"
+            },
+            "type": "array",
+            "title": "Active Medications"
+          },
+          "latest_observations": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationOut"
+            },
+            "type": "array",
+            "title": "Latest Observations"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "patient",
+          "conditions",
+          "episodes",
+          "active_medications",
+          "latest_observations",
+          "counts"
+        ],
+        "title": "PatientDetail"
+      },
+      "PatientOut": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_clinical",
+            "title": "Provenance",
+            "default": "recorded_synthetic_clinical"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "synthetic_mrn": {
+            "type": "string",
+            "title": "Synthetic Mrn"
+          },
+          "given_name": {
+            "type": "string",
+            "title": "Given Name"
+          },
+          "family_name": {
+            "type": "string",
+            "title": "Family Name"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "age_years": {
+            "type": "integer",
+            "title": "Age Years"
+          },
+          "sex": {
+            "type": "string",
+            "title": "Sex"
+          },
+          "deprivation_quintile": {
+            "type": "integer",
+            "title": "Deprivation Quintile"
+          },
+          "preferred_language": {
+            "type": "string",
+            "title": "Preferred Language"
+          },
+          "registered_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Registered On"
+          },
+          "death_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Death Date"
+          },
+          "transfer_out_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transfer Out Date"
+          },
+          "is_synthetic": {
+            "type": "boolean",
+            "title": "Is Synthetic"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "synthetic_mrn",
+          "given_name",
+          "family_name",
+          "birth_date",
+          "age_years",
+          "sex",
+          "deprivation_quintile",
+          "preferred_language",
+          "registered_on",
+          "death_date",
+          "transfer_out_date",
+          "is_synthetic"
+        ],
+        "title": "PatientOut"
+      },
+      "PatientSummary": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_clinical",
+            "title": "Provenance",
+            "default": "recorded_synthetic_clinical"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "synthetic_mrn": {
+            "type": "string",
+            "title": "Synthetic Mrn"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "age_years": {
+            "type": "integer",
+            "title": "Age Years"
+          },
+          "sex": {
+            "type": "string",
+            "title": "Sex"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "synthetic_mrn",
+          "display_name",
+          "age_years",
+          "sex"
+        ],
+        "title": "PatientSummary"
+      },
+      "PredictionSummary": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "simulated_prediction",
+            "title": "Provenance",
+            "default": "simulated_prediction"
+          },
+          "risk_score_id": {
+            "type": "integer",
+            "title": "Risk Score Id"
+          },
+          "scoring_run_id": {
+            "type": "integer",
+            "title": "Scoring Run Id"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability",
+            "description": "Calibrated probability that follow-up is still incomplete 30 days after the due date"
+          },
+          "risk_tier": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Risk Tier"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "prediction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Prediction At"
+          },
+          "scored_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scored At"
+          },
+          "top_factor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Factor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "risk_score_id",
+          "scoring_run_id",
+          "probability",
+          "risk_tier",
+          "rank",
+          "model_version",
+          "prediction_at",
+          "scored_at",
+          "top_factor"
+        ],
+        "title": "PredictionSummary"
+      },
+      "RecordedOutcome": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_synthetic_outcome",
+            "title": "Provenance",
+            "default": "recorded_synthetic_outcome"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "open_overdue",
+              "completed_on_time",
+              "completed_late",
+              "censored",
+              "not_eligible"
+            ],
+            "title": "Status"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_in_window": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed In Window"
+          },
+          "label_status": {
+            "type": "string",
+            "title": "Label Status"
+          },
+          "censor_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Censor Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "completed_at",
+          "completed_in_window",
+          "label_status",
+          "censor_reason"
+        ],
+        "title": "RecordedOutcome"
+      },
+      "RiskScoreDetail": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "simulated_prediction",
+            "title": "Provenance",
+            "default": "simulated_prediction"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "scoring_run_id": {
+            "type": "integer",
+            "title": "Scoring Run Id"
+          },
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "model_type": {
+            "type": "string",
+            "title": "Model Type"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          },
+          "risk_tier": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Risk Tier"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "model_log_odds": {
+            "type": "number",
+            "title": "Model Log Odds"
+          },
+          "prediction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Prediction At"
+          },
+          "scored_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scored At"
+          },
+          "explanation": {
+            "$ref": "#/components/schemas/Explanation"
+          },
+          "features": {
+            "items": {
+              "$ref": "#/components/schemas/FeatureValue"
+            },
+            "type": "array",
+            "title": "Features"
+          },
+          "run": {
+            "$ref": "#/components/schemas/ScoringRunOut"
+          },
+          "interpretation": {
+            "type": "string",
+            "title": "Interpretation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scoring_run_id",
+          "episode_id",
+          "patient_id",
+          "model_version",
+          "model_type",
+          "probability",
+          "risk_tier",
+          "rank",
+          "model_log_odds",
+          "prediction_at",
+          "scored_at",
+          "explanation",
+          "features",
+          "run",
+          "interpretation"
+        ],
+        "title": "RiskScoreDetail"
+      },
+      "RiskScoreHistoryItem": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "simulated_prediction",
+            "title": "Provenance",
+            "default": "simulated_prediction"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "scoring_run_id": {
+            "type": "integer",
+            "title": "Scoring Run Id"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "probability": {
+            "type": "number",
+            "title": "Probability"
+          },
+          "risk_tier": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Risk Tier"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "prediction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Prediction At"
+          },
+          "scored_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scored At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "scoring_run_id",
+          "model_version",
+          "probability",
+          "risk_tier",
+          "rank",
+          "prediction_at",
+          "scored_at"
+        ],
+        "title": "RiskScoreHistoryItem"
+      },
+      "ScoringRunOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "model_type": {
+            "type": "string",
+            "title": "Model Type"
+          },
+          "bundle_metadata_sha256": {
+            "type": "string",
+            "title": "Bundle Metadata Sha256"
+          },
+          "feature_spec_version": {
+            "type": "string",
+            "title": "Feature Spec Version"
+          },
+          "calibration_method": {
+            "type": "string",
+            "title": "Calibration Method"
+          },
+          "tier_thresholds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Tier Thresholds"
+          },
+          "data_fingerprint": {
+            "type": "string",
+            "title": "Data Fingerprint"
+          },
+          "data_cutoff": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Cutoff"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "n_scored": {
+            "type": "integer",
+            "title": "N Scored"
+          },
+          "tier_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Tier Counts"
+          },
+          "triggered_by": {
+            "type": "string",
+            "title": "Triggered By"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "scope",
+          "model_version",
+          "model_type",
+          "bundle_metadata_sha256",
+          "feature_spec_version",
+          "calibration_method",
+          "tier_thresholds",
+          "data_fingerprint",
+          "data_cutoff",
+          "started_at",
+          "finished_at",
+          "n_scored",
+          "tier_counts",
+          "triggered_by",
+          "error"
+        ],
+        "title": "ScoringRunOut"
+      },
+      "Timeline": {
+        "properties": {
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "returned": {
+            "type": "integer",
+            "title": "Returned"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEvent"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "patient_id",
+          "total",
+          "returned",
+          "items"
+        ],
+        "title": "Timeline"
+      },
+      "TimelineEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "appointment",
+              "encounter",
+              "observation",
+              "medication_start",
+              "medication_stop",
+              "outreach",
+              "risk_score",
+              "followup_due"
+            ],
+            "title": "Type"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "recorded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recorded At"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail"
+          },
+          "provenance": {
+            "type": "string",
+            "title": "Provenance"
+          },
+          "episode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "occurred_at",
+          "recorded_at",
+          "title",
+          "detail",
+          "provenance"
+        ],
+        "title": "TimelineEvent"
+      },
+      "WeekLoad": {
+        "properties": {
+          "week_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Week Start"
+          },
+          "due_open_episodes": {
+            "type": "integer",
+            "title": "Due Open Episodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "week_start",
+          "due_open_episodes"
+        ],
+        "title": "WeekLoad"
+      },
+      "WorklistItem": {
+        "properties": {
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "programme": {
+            "type": "string",
+            "title": "Programme"
+          },
+          "condition": {
+            "type": "string",
+            "title": "Condition"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "days_until_due": {
+            "type": "integer",
+            "title": "Days Until Due"
+          },
+          "prediction_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Prediction At"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientSummary"
+          },
+          "prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_outreach": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OutreachSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outreach_attempts": {
+            "type": "integer",
+            "title": "Outreach Attempts"
+          },
+          "recorded_outcome": {
+            "$ref": "#/components/schemas/RecordedOutcome"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode_id",
+          "programme",
+          "condition",
+          "due_date",
+          "days_until_due",
+          "prediction_at",
+          "patient",
+          "prediction",
+          "last_outreach",
+          "outreach_attempts",
+          "recorded_outcome"
+        ],
+        "title": "WorklistItem"
+      },
+      "WorklistPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorklistItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "scoring_run_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scoring Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_pages",
+          "as_of",
+          "scoring_run_id"
+        ],
+        "title": "WorklistPage"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "system"
+    },
+    {
+      "name": "dashboard"
+    },
+    {
+      "name": "worklist"
+    },
+    {
+      "name": "patients"
+    },
+    {
+      "name": "episodes"
+    },
+    {
+      "name": "risk scores"
+    },
+    {
+      "name": "outreach"
+    },
+    {
+      "name": "model"
+    },
+    {
+      "name": "admin"
+    }
+  ]
+}

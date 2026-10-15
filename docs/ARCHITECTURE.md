@@ -100,9 +100,9 @@ App shell with a permanent "synthetic data" banner. Screens:
 | M1 | Repo, prediction target, synthetic generator, episodes and labels, manifest, report | – | **done** |
 | M2 | Feature spec + as_of-safe builder + leakage tests | M1 | **done** |
 | M3 | Baselines, LR, XGBoost, calibration, evaluation, explanations, model bundle | M2 | **done** (selected: LR, `cura-fu-1.0.0`) |
-| M4 | Postgres schema, loader, batch scoring | M3 | next |
-| M5 | Read API with dev auth stub | M4 | |
-| M6 | Frontend shell, Worklist, Patient 360 | M5 | |
+| M4 | Database schema (SQLite default, PostgreSQL via DATABASE_URL), loader, batch scoring | M3 | **done** |
+| M5 | REST API with dev auth boundary, outreach writes, audit | M4 | **done** (incl. outreach API + data-quality endpoint from M7/M8) |
+| M6 | Frontend shell, Worklist, Patient 360 | M5 | next |
 | M7 | Outreach workflow + Outcomes | M6 | |
 | M8 | Model & Data page, data-quality endpoint | M5/M6 | |
 | M9 | Supabase Auth, roles, audit viewer | M5 | |

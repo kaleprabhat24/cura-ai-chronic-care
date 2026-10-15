@@ -26,3 +26,6 @@ Thumbs.db
 # Node (later milestones)
 node_modules/
 .next/
+
+# Local backend database (SQLite)
+backend/var/

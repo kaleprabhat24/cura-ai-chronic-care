@@ -94,3 +94,28 @@ rule now requires the paired patient-level bootstrap 95% CI of XGBoost's validat
 to lie above zero. The observed CI was [−0.0007, +0.0284], so logistic regression was selected. The
 correction was made after the test metrics had been computed for both models. The test set was not
 used by the rule, and LR is also nominally ahead on test (difference CIs include zero).
+
+**ADR-015 — Local-first backend: SQLite by default, PostgreSQL via DATABASE_URL (2026-10-15).** This
+supersedes the "Docker Compose Postgres locally" part of ADR-001 for local development. The backend
+must run with no server, Docker or cloud account, so the default is a SQLite file. The same
+SQLAlchemy models and Alembic migrations target PostgreSQL unchanged. Timestamps go through a
+`UTCDateTime` type: timezone-aware everywhere, stored as naive UTC on SQLite. Supabase remains the
+planned managed Postgres + Auth for deployment.
+
+**ADR-016 — Cohort loading and scoring reuse the ML artefacts (2026-10-15).** `cura-api seed` loads
+the persisted M1 Parquet files and never simulates. Each seeded row stores a content hash, so repeated
+runs report honest inserted / updated / skipped counts. Seeded rows missing from the source are
+reported, never deleted. Rows with `origin = "app"` are never touched. Hidden simulation traits are not
+loaded. Historical outreach is linked to the episode in whose review cycle it happened. The historical
+`letter_sent` outcome becomes channel `letter` + outcome `other` + an explanatory note, so the app
+vocabulary stays the seven agreed outcomes. `cura-api score` uses the saved bundle, the bundle's own
+cohort config and `cura_ml.features.build_features`. It refuses to run when the database, the dataset
+files and the bundle disagree on the data fingerprint. Each run appends an immutable snapshot
+(`scoring_runs` + `risk_scores`) with the bundle metadata hash, thresholds, feature snapshot and
+explanation. Read endpoints never score.
+
+**ADR-017 — Development authentication boundary (2026-10-15).** `get_principal` is the single
+authentication point. `AUTH_MODE=dev` trusts `X-Dev-User` / `X-Dev-Role` headers and refuses to
+start with `ENVIRONMENT=production`. `AUTH_MODE=supabase` refuses to start until real JWT validation
+is implemented. Roles: coordinator (patient-level views and outreach writes), analyst (aggregates,
+model and data quality), admin (all, plus audit). Seeding, scoring and outreach writes are audited.
