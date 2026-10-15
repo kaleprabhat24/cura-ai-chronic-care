@@ -45,9 +45,20 @@ def health(request: Request, session: SessionDep) -> s.Health:
         db_ok = "error"
     bundle_ok = (settings.model_bundle_dir / "metadata.json").exists()
     status = "ok" if db_ok == "ok" and loaded and bundle_ok and run_id else "degraded"
-    return s.Health(status=status, version=__version__, environment=settings.environment,
-                    auth_mode=settings.auth_mode, database=db_ok, dataset_loaded=loaded,
-                    model_bundle_available=bundle_ok, latest_scoring_run_id=run_id)
+    return s.Health(
+    status=status,
+    version=__version__,
+    environment=settings.environment,
+    auth_mode=settings.auth_mode,
+    production_auth_implemented=(
+        settings.auth_mode == "supabase"
+        and request.app.state.token_verifier is not None
+    ),
+    database=db_ok,
+    dataset_loaded=loaded,
+    model_bundle_available=bundle_ok,
+    latest_scoring_run_id=run_id,
+)
 
 
 @router.get("/me", response_model=s.Me, tags=["system"], summary="Current (development) identity")
