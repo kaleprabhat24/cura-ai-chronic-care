@@ -5,14 +5,15 @@ services:
   - type: web
     name: cura-ai-api
     runtime: python
-    plan: starter            # the free plan sleeps; SQLite is refused in production, use Supabase Postgres
+    region: singapore
+    plan: free            # the free plan sleeps; SQLite is refused in production, use Supabase Postgres
     buildCommand: >-
       pip install --upgrade pip &&
       pip install -e ml -e "backend[postgres]" &&
       cura-ml all
     # Runs on every deploy before the new version starts (Render paid plans). On the free plan run
     # `cura-api db upgrade` yourself from a local machine against the Supabase DATABASE_URL instead.
-    preDeployCommand: cura-api db upgrade
+    
     startCommand: cura-api serve --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/v1/health
     envVars:
