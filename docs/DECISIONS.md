@@ -119,3 +119,37 @@ authentication point. `AUTH_MODE=dev` trusts `X-Dev-User` / `X-Dev-Role` headers
 start with `ENVIRONMENT=production`. `AUTH_MODE=supabase` refuses to start until real JWT validation
 is implemented. Roles: coordinator (patient-level views and outreach writes), analyst (aggregates,
 model and data quality), admin (all, plus audit). Seeding, scoring and outreach writes are audited.
+
+**ADR-018 — Predictive risk vs historical scores vs overdue outcomes (2026-10-15).** A stored
+probability is presented as a prediction only while the episode's outcome is unknown at the data
+cutoff (open, and the outcome window, due + 30 days, has not ended). After that, or once the episode
+is completed or censored, the score is *historical*: kept, with prediction time, scoring time, run and
+model version, but never shown as current. An open episode past its window is an **observed outcome**
+(not completed in time) that needs operational follow-up. The API returns this as `score_context`
+(`follow_up_status`, `score_status`, `days_overdue`, `score_age_days`, `data_sufficiency`, a summary)
+on worklist items, episodes and risk scores. `/worklist?queue=predictive|overdue|no_score|all`
+separates the queues. The dashboard reports `predictive_by_tier` separately from all open tiers.
+Historical snapshots are never deleted.
+
+**ADR-019 — Supabase Auth verification and roles (2026-10-15).** This supersedes the dev-only boundary
+of ADR-017. With `AUTH_MODE=supabase`, the API verifies bearer access tokens against the project's
+JWKS (RS256/ES256), or against the legacy HS256 secret only if `SUPABASE_JWT_SECRET` is set. It
+checks issuer, audience, expiry, `sub` and `role = authenticated`. Roles come from the new
+`app_users` table (migration 0002, managed with `cura-api users`). The verified `sub` is bound on
+first sign-in by email. Unprovisioned or inactive users get 403, and role headers are ignored. The
+frontend uses supabase-js (anon key only, PKCE, session persisted and auto-refreshed) and sends the
+access token. Production refuses dev auth and SQLite. Migration 0003 enables RLS (no policies) on
+PostgreSQL so Supabase's Data API cannot read the tables with the anon key.
+
+**ADR-020 — FHIR export scope and validation honesty (2026-10-15).** The export is a per-patient
+`collection` Bundle of eight resource types with urn:uuid references and synthetic tags.
+RiskAssessments carry model version and scoring provenance. It is validated by custom structural
+checks and `fhir.resources` R4B models, *not* the HL7 validator, so no formal R4 conformance is
+claimed. Appointment end times are a stated nominal 20-minute slot.
+
+**ADR-021 — Frontend architecture (2026-10-15).** Next.js 15 App Router, client-rendered pages behind
+an auth guard, TanStack Query, and an openapi-fetch client typed from `backend/openapi.json`
+(`npm run gen:api`). shadcn/ui-style components are written into `src/components/ui` on Radix
+primitives (no generator run). Charts use Recharts. All figures come from the API. The API process
+no longer imports the training stack (`data_fingerprint` moved to `cura_ml.manifest`), which keeps
+memory low on small hosts.

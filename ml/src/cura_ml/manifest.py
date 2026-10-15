@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import platform
 from pathlib import Path
@@ -60,6 +61,14 @@ def write_manifest(data_dir: str | Path, cfg: dict[str, Any]) -> dict[str, Any]:
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True, default=str) + "\n",
                     encoding="utf-8")
     return manifest
+
+
+def data_fingerprint(manifest: dict[str, Any]) -> str:
+    """Hash identifying the ordinary dataset (config + every non-hidden file's content)."""
+    parts = {"config_sha256": manifest["config_sha256"],
+             **{k: v["content_sha256"] for k, v in sorted(manifest["files"].items())
+                if not k.startswith("hidden/")}}
+    return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
 
 
 def read_manifest(data_dir: str | Path) -> dict[str, Any]:

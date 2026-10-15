@@ -6,7 +6,7 @@ from __future__ import annotations
 from alembic import context
 
 from cura_api import models
-from cura_api.db import UTCDateTime, make_engine
+from cura_api.db import UTCDateTime, engine_from_settings, make_engine
 from cura_api.settings import get_settings
 
 config = context.config
@@ -29,7 +29,8 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    engine = make_engine(url)
+    settings = config.attributes.get("settings")
+    engine = engine_from_settings(settings) if settings is not None else make_engine(url)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata,
                           render_as_batch=True, render_item=render_item, compare_type=False)

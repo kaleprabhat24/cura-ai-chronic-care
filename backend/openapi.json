@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Cura AI API",
-    "description": "\nBackend for **Cura AI**, a chronic-disease follow-up prioritisation demo. **All data is synthetic.**\n\n* Risk scores are *simulated predictions* produced by batch scoring runs with the saved model bundle.\n  They are never recomputed when a page is opened.\n* Every payload labels its provenance: `simulated_prediction`, `recorded_synthetic_clinical`,\n  `recorded_synthetic_outcome` or `recorded_outreach_outcome`.\n* **Authentication:** only a local development mode exists (`X-Dev-User` / `X-Dev-Role` headers;\n  roles `coordinator`, `analyst`, `admin`). It refuses to run in production. Production\n  authentication is not implemented yet.\n* Errors have the shape `{\"error\": {\"code\", \"message\", \"details\"}}`.\n",
+    "description": "\nBackend for **Cura AI**, a chronic-disease follow-up prioritisation demo. **All data is synthetic.**\n\n* Risk scores are *simulated predictions* produced by batch scoring runs with the saved model bundle.\n  They are never recomputed when a page is opened.\n* Every payload labels its provenance: `simulated_prediction`, `recorded_synthetic_clinical`,\n  `recorded_synthetic_outcome` or `recorded_outreach_outcome`.\n* **Authentication:** `AUTH_MODE=supabase` verifies Supabase Auth access tokens\n  (`Authorization: Bearer ...`) and maps them to provisioned `app_users` roles (`coordinator`,\n  `analyst`, `admin`). `AUTH_MODE=dev` (local only, refused in production) accepts `X-Dev-User` /\n  `X-Dev-Role` headers.\n* Errors have the shape `{\"error\": {\"code\", \"message\", \"details\"}}`.\n",
     "version": "0.1.0"
   },
   "paths": {
@@ -66,6 +66,24 @@
         "operationId": "me_api_v1_me_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -78,10 +96,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -96,10 +114,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -155,6 +173,24 @@
         "operationId": "dashboard_api_v1_dashboard_summary_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -167,10 +203,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -185,10 +221,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -422,6 +458,24 @@
             "description": "open = awaiting completion at the data cutoff"
           },
           {
+            "name": "queue",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "predictive",
+                "overdue",
+                "no_score"
+              ],
+              "type": "string",
+              "description": "predictive = open, outcome window still running, scored (risk is a live prediction); overdue = open past the outcome window (recorded as not completed: operational follow-up, score is historical); no_score = open without a score in the latest run; all = no restriction",
+              "default": "all",
+              "title": "Queue"
+            },
+            "description": "predictive = open, outcome window still running, scored (risk is a live prediction); overdue = open past the outcome window (recorded as not completed: operational follow-up, score is historical); no_score = open without a score in the latest run; all = no restriction"
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -447,6 +501,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -459,10 +531,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -477,10 +549,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -545,6 +617,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -557,10 +647,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -575,10 +665,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -744,6 +834,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -756,10 +864,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -774,10 +882,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -852,6 +960,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -864,10 +990,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -882,10 +1008,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -964,6 +1090,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -976,10 +1120,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -994,10 +1138,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1072,6 +1216,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1084,10 +1246,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1102,10 +1264,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1184,6 +1346,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1196,10 +1376,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1214,10 +1394,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1292,6 +1472,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1304,10 +1502,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1322,10 +1520,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1402,6 +1600,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1414,10 +1630,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1432,10 +1648,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "requestBody": {
@@ -1505,14 +1721,139 @@
         }
       }
     },
-    "/api/v1/outreach/outcomes": {
+    "/api/v1/outreach-attempts": {
       "get": {
         "tags": [
           "outreach"
         ],
-        "summary": "Aggregate outreach outcomes and follow-up completion statistics",
-        "operationId": "outcomes_api_v1_outreach_outcomes_get",
+        "summary": "Outreach attempts across patients (newest first, or by next-action date)",
+        "operationId": "list_outreach_api_v1_outreach_attempts_get",
         "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "app",
+                    "historical_simulation"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Origin"
+            }
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "no_answer",
+                      "left_message",
+                      "reached_booked",
+                      "reached_declined",
+                      "reached_already_done",
+                      "wrong_number",
+                      "other"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "repeatable",
+              "title": "Outcome"
+            },
+            "description": "repeatable"
+          },
+          {
+            "name": "pending_next_action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true = a next action is set and the follow-up is still open",
+              "title": "Pending Next Action"
+            },
+            "description": "true = a next action is set and the follow-up is still open"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "recorded_at",
+                "next_action_due"
+              ],
+              "type": "string",
+              "default": "recorded_at",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "1-based page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 25,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
           {
             "name": "x-dev-user",
             "in": "header",
@@ -1526,10 +1867,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1544,10 +1885,242 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_OutreachListItem_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{patient_id}/fhir": {
+      "get": {
+        "tags": [
+          "patients"
+        ],
+        "summary": "Export the patient's synthetic record as a FHIR R4-oriented Bundle (JSON)",
+        "operationId": "export_fhir_api_v1_patients__patient_id__fhir_get",
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Patient Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "FHIR Bundle (type collection)",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/fhir+json": {}
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/outreach/outcomes": {
+      "get": {
+        "tags": [
+          "outreach"
+        ],
+        "summary": "Aggregate outreach outcomes and follow-up completion statistics",
+        "operationId": "outcomes_api_v1_outreach_outcomes_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1603,6 +2176,24 @@
         "operationId": "model_current_api_v1_models_current_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1615,10 +2206,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1633,10 +2224,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1646,6 +2237,113 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/current/documents": {
+      "get": {
+        "tags": [
+          "model"
+        ],
+        "summary": "Model card and evaluation report (Markdown) for the scoring model",
+        "operationId": "model_documents_api_v1_models_current_documents_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDocuments"
                 }
               }
             }
@@ -1701,6 +2399,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1713,10 +2429,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1731,10 +2447,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1825,6 +2541,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1837,10 +2571,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1855,10 +2589,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -1923,6 +2657,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -1935,10 +2687,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -1953,10 +2705,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -2022,6 +2774,24 @@
         "operationId": "data_quality_api_v1_data_quality_get",
         "parameters": [
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -2034,10 +2804,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -2052,10 +2822,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -2153,6 +2923,24 @@
             }
           },
           {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
             "name": "x-dev-user",
             "in": "header",
             "required": false,
@@ -2165,10 +2953,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: user id",
+              "description": "Dev mode only: user id",
               "title": "X-Dev-User"
             },
-            "description": "Development auth only: user id"
+            "description": "Dev mode only: user id"
           },
           {
             "name": "x-dev-role",
@@ -2183,10 +2971,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Development auth only: role (coordinator | analyst | admin)",
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
               "title": "X-Dev-Role"
             },
-            "description": "Development auth only: role (coordinator | analyst | admin)"
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
           }
         ],
         "responses": {
@@ -2232,10 +3020,185 @@
           }
         }
       }
+    },
+    "/api/v1/admin/users": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Provisioned application users and roles",
+        "operationId": "admin_users_api_v1_admin_users_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Supabase mode: Bearer access token",
+              "title": "Authorization"
+            },
+            "description": "Supabase mode: Bearer access token"
+          },
+          {
+            "name": "x-dev-user",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: user id",
+              "title": "X-Dev-User"
+            },
+            "description": "Dev mode only: user id"
+          },
+          {
+            "name": "x-dev-role",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Dev mode only: role (coordinator | analyst | admin)",
+              "title": "X-Dev-Role"
+            },
+            "description": "Dev mode only: role (coordinator | analyst | admin)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppUserOut"
+                  },
+                  "title": "Response Admin Users Api V1 Admin Users Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AppUserOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "linked_to_auth_identity": {
+            "type": "boolean",
+            "title": "Linked To Auth Identity"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_sign_in_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sign In At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "role",
+          "is_active",
+          "linked_to_auth_identity",
+          "created_at",
+          "last_sign_in_at"
+        ],
+        "title": "AppUserOut"
+      },
       "AuditEventOut": {
         "properties": {
           "id": {
@@ -2424,6 +3387,34 @@
                 "type": "null"
               }
             ]
+          },
+          "open_upcoming": {
+            "type": "integer",
+            "title": "Open Upcoming",
+            "default": 0
+          },
+          "open_in_grace_window": {
+            "type": "integer",
+            "title": "Open In Grace Window",
+            "default": 0
+          },
+          "open_overdue_unresolved": {
+            "type": "integer",
+            "title": "Open Overdue Unresolved",
+            "default": 0
+          },
+          "predictive_by_tier": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Predictive By Tier",
+            "description": "Tiers of open episodes whose score is still predictive"
+          },
+          "open_limited_history": {
+            "type": "integer",
+            "title": "Open Limited History",
+            "default": 0
           },
           "notes": {
             "items": {
@@ -2621,6 +3612,9 @@
                 "type": "null"
               }
             ]
+          },
+          "score_context": {
+            "$ref": "#/components/schemas/ScoreContext"
           }
         },
         "type": "object",
@@ -2637,7 +3631,8 @@
           "ineligible_reason",
           "is_cold_start",
           "recorded_outcome",
-          "latest_prediction"
+          "latest_prediction",
+          "score_context"
         ],
         "title": "EpisodeOut"
       },
@@ -2758,6 +3753,29 @@
           "direction": {
             "type": "string",
             "title": "Direction"
+          },
+          "window": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window",
+            "description": "Look-back window of the feature at prediction time"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         "type": "object",
@@ -2889,6 +3907,17 @@
           "auth_mode": {
             "type": "string",
             "title": "Auth Mode"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
           }
         },
         "type": "object",
@@ -2957,6 +3986,43 @@
           "recorded_at"
         ],
         "title": "MedicationOut"
+      },
+      "ModelDocuments": {
+        "properties": {
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "model_card_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Card Markdown"
+          },
+          "model_report_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Report Markdown"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_version",
+          "model_card_markdown",
+          "model_report_markdown"
+        ],
+        "title": "ModelDocuments"
       },
       "ModelInfo": {
         "properties": {
@@ -3053,6 +4119,32 @@
             "type": "object",
             "title": "Library Versions"
           },
+          "calibration_table": {
+            "items": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Calibration Table"
+          },
+          "test_tiers": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Test Tiers"
+          },
+          "feature_importance": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Feature Importance"
+          },
           "synthetic_data_only": {
             "type": "boolean",
             "title": "Synthetic Data Only"
@@ -3141,6 +4233,14 @@
             "type": "string",
             "format": "date",
             "title": "As Of"
+          },
+          "attempts_by_month": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Attempts By Month"
           },
           "attempts_by_origin": {
             "additionalProperties": {
@@ -3317,6 +4417,137 @@
           "outcome"
         ],
         "title": "OutreachCreate"
+      },
+      "OutreachListItem": {
+        "properties": {
+          "provenance": {
+            "type": "string",
+            "const": "recorded_outreach_outcome",
+            "title": "Provenance",
+            "default": "recorded_outreach_outcome"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "episode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
+          },
+          "programme": {
+            "type": "string",
+            "title": "Programme"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "next_action": {
+            "type": "string",
+            "title": "Next Action"
+          },
+          "next_action_due": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action Due"
+          },
+          "attempted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Attempted At"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          },
+          "recorded_by": {
+            "type": "string",
+            "title": "Recorded By"
+          },
+          "patient": {
+            "$ref": "#/components/schemas/PatientSummary"
+          },
+          "follow_up_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "upcoming",
+                  "due_in_grace_window",
+                  "overdue_unresolved",
+                  "completed",
+                  "censored",
+                  "not_eligible"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "patient_id",
+          "episode_id",
+          "programme",
+          "origin",
+          "purpose",
+          "channel",
+          "outcome",
+          "note",
+          "next_action",
+          "next_action_due",
+          "attempted_at",
+          "recorded_at",
+          "recorded_by",
+          "patient"
+        ],
+        "title": "OutreachListItem"
       },
       "OutreachOut": {
         "properties": {
@@ -3501,6 +4732,42 @@
           "total_pages"
         ],
         "title": "Page[AuditEventOut]"
+      },
+      "Page_OutreachListItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OutreachListItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_pages"
+        ],
+        "title": "Page[OutreachListItem]"
       },
       "Page_ScoringRunOut_": {
         "properties": {
@@ -3950,6 +5217,13 @@
           "run": {
             "$ref": "#/components/schemas/ScoringRunOut"
           },
+          "is_latest_run": {
+            "type": "boolean",
+            "title": "Is Latest Run"
+          },
+          "score_context": {
+            "$ref": "#/components/schemas/ScoreContext"
+          },
           "interpretation": {
             "type": "string",
             "title": "Interpretation"
@@ -3972,6 +5246,8 @@
           "explanation",
           "features",
           "run",
+          "is_latest_run",
+          "score_context",
           "interpretation"
         ],
         "title": "RiskScoreDetail"
@@ -4036,6 +5312,85 @@
           "scored_at"
         ],
         "title": "RiskScoreHistoryItem"
+      },
+      "ScoreContext": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "follow_up_status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "due_in_grace_window",
+              "overdue_unresolved",
+              "completed",
+              "censored",
+              "not_eligible"
+            ],
+            "title": "Follow Up Status"
+          },
+          "score_status": {
+            "type": "string",
+            "enum": [
+              "predictive",
+              "historical",
+              "no_score"
+            ],
+            "title": "Score Status"
+          },
+          "outcome_window_ended": {
+            "type": "boolean",
+            "title": "Outcome Window Ended"
+          },
+          "outcome_mature": {
+            "type": "boolean",
+            "title": "Outcome Mature"
+          },
+          "days_overdue": {
+            "type": "integer",
+            "title": "Days Overdue"
+          },
+          "score_age_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Age Days"
+          },
+          "data_sufficiency": {
+            "type": "string",
+            "enum": [
+              "adequate",
+              "limited_history"
+            ],
+            "title": "Data Sufficiency"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "follow_up_status",
+          "score_status",
+          "outcome_window_ended",
+          "outcome_mature",
+          "days_overdue",
+          "score_age_days",
+          "data_sufficiency",
+          "summary"
+        ],
+        "title": "ScoreContext",
+        "description": "How to read a score for this episode at the data cutoff (`as_of`).\n\n* follow_up_status \u2014 recorded state of the follow-up: upcoming (before due date),\n  due_in_grace_window (past due, 30-day completion window still open), overdue_unresolved (not\n  completed by the end of the window: an observed outcome needing operational follow-up),\n  completed, censored, not_eligible.\n* score_status \u2014 predictive (outcome not yet known, so the probability is a live prediction),\n  historical (the outcome window has closed or the episode is resolved; the probability is a past\n  prediction kept for provenance), no_score."
       },
       "ScoringRunOut": {
         "properties": {
@@ -4334,6 +5689,9 @@
           },
           "recorded_outcome": {
             "$ref": "#/components/schemas/RecordedOutcome"
+          },
+          "score_context": {
+            "$ref": "#/components/schemas/ScoreContext"
           }
         },
         "type": "object",
@@ -4348,7 +5706,8 @@
           "prediction",
           "last_outreach",
           "outreach_attempts",
-          "recorded_outcome"
+          "recorded_outcome",
+          "score_context"
         ],
         "title": "WorklistItem"
       },

@@ -52,7 +52,8 @@ def health(request: Request, session: SessionDep) -> s.Health:
 
 @router.get("/me", response_model=s.Me, tags=["system"], summary="Current (development) identity")
 def me(principal: Annotated[Principal, Depends(ANY_ROLE)]) -> s.Me:
-    return s.Me(user_id=principal.user_id, role=principal.role, auth_mode=principal.auth_mode)
+    return s.Me(user_id=principal.user_id, role=principal.role, auth_mode=principal.auth_mode,
+                display_name=principal.display_name)
 
 
 @router.get("/dashboard/summary", response_model=s.DashboardSummary, tags=["dashboard"],
@@ -65,15 +66,27 @@ def dashboard(session: SessionDep, _: Annotated[Principal, Depends(ANY_ROLE)]) -
     patients_total = session.execute(select(func.count()).select_from(m.Patient)).scalar_one()
     patients_active = session.execute(select(func.count()).select_from(m.Patient).where(
         m.Patient.death_date.is_(None), m.Patient.transfer_out_date.is_(None))).scalar_one()
-    open_q = episode_base(m.FollowupEpisode.id, m.FollowupEpisode.due_date).where(open_episode_filter())
-    due_dates = [d for _, d in session.execute(open_q).all()]
+    open_q = (episode_base(m.FollowupEpisode.due_date, m.FollowupEpisode.window_end_date,
+                           m.FollowupEpisode.is_cold_start, m.RiskScore.risk_tier)
+              .outerjoin(m.RiskScore, and_(m.RiskScore.episode_id == m.FollowupEpisode.id,
+                                           m.RiskScore.scoring_run_id == (run.id if run else -1)))
+              .where(open_episode_filter()))
+    open_rows = session.execute(open_q).all()
+    due_dates = [r.due_date for r in open_rows]
     by_tier: dict[str, int] = {"high": 0, "medium": 0, "low": 0}
-    if run is not None:
-        tq = (episode_base(m.RiskScore.risk_tier, func.count())
-              .join(m.RiskScore, and_(m.RiskScore.episode_id == m.FollowupEpisode.id,
-                                      m.RiskScore.scoring_run_id == run.id))
-              .where(open_episode_filter()).group_by(m.RiskScore.risk_tier))
-        by_tier.update({t: n for t, n in session.execute(tq).all()})
+    predictive: dict[str, int] = {"high": 0, "medium": 0, "low": 0}
+    upcoming = grace = overdue_unresolved = 0
+    for r in open_rows:
+        if r.risk_tier:
+            by_tier[r.risk_tier] += 1
+        if r.due_date > as_of:
+            upcoming += 1
+        elif r.window_end_date >= as_of:
+            grace += 1
+        else:
+            overdue_unresolved += 1
+        if r.risk_tier and r.window_end_date >= as_of:
+            predictive[r.risk_tier] += 1
     weeks = []
     for w in range(8):
         start = as_of + timedelta(days=7 * w)
@@ -110,7 +123,12 @@ def dashboard(session: SessionDep, _: Annotated[Principal, Depends(ANY_ROLE)]) -
         due_by_week=weeks, outreach_historical_total=origins.get("historical_simulation", 0),
         outreach_app_total=origins.get("app", 0), outreach_last_30_days=last30,
         completion_last_12_months=completion, latest_scoring_run=run_out(run),
+        open_upcoming=upcoming, open_in_grace_window=grace, open_overdue_unresolved=overdue_unresolved,
+        predictive_by_tier=predictive,
+        open_limited_history=sum(1 for r in open_rows if r.is_cold_start),
         notes=["All patients and events are synthetic.",
-               "Tier counts are simulated predictions from the latest scoring run.",
+               "Tier counts are simulated predictions from the latest scoring run. predictive_by_tier "
+               "counts only open follow-ups whose outcome window is still running; open_by_tier also "
+               "includes overdue follow-ups whose score is historical.",
                f"Dates are relative to the dataset cutoff ({as_of}); outreach entered in the app is "
                "counted in outreach_app_total."])

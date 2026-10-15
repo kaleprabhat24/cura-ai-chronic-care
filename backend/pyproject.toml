@@ -11,6 +11,8 @@ dependencies = [
     "alembic>=1.13",
     "pydantic>=2.7",
     "pydantic-settings>=2.4",
+    "pyjwt[crypto]>=2.9",
+    "fhir.resources>=7.1",
 ]
 
 [project.optional-dependencies]

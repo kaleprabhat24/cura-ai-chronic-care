@@ -38,10 +38,28 @@ class UTCDateTime(TypeDecorator):
         return value.astimezone(UTC)
 
 
-def make_engine(url: str, echo: bool = False) -> Engine:
+def engine_options(url: str, echo: bool = False, *, pool_size: int = 5, max_overflow: int = 5,
+                   pool_recycle: int = 1800, sslmode: str | None = None,
+                   disable_prepared_statements: bool = False) -> dict:
+    """create_engine keyword arguments. PostgreSQL gets a pre-pinged, recycled connection pool, optional
+    `sslmode` (Supabase: "require") and, for PgBouncer/transaction poolers, no prepared statements."""
     kwargs: dict = {"echo": echo, "future": True}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
+        return kwargs
+    connect_args: dict = {}
+    if sslmode:
+        connect_args["sslmode"] = sslmode
+    if disable_prepared_statements:
+        connect_args["prepare_threshold"] = None  # psycopg 3: never prepare (PgBouncer transaction mode)
+    kwargs.update(pool_pre_ping=True, pool_size=pool_size, max_overflow=max_overflow,
+                  pool_recycle=pool_recycle, connect_args=connect_args)
+    return kwargs
+
+
+def make_engine(url: str, echo: bool = False, **options) -> Engine:
+    kwargs = engine_options(url, echo, **options)
+    if url.startswith("sqlite"):
         path = url.split("///", 1)[-1]
         if path and path != ":memory:":
             Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -53,6 +71,14 @@ def make_engine(url: str, echo: bool = False) -> Engine:
             cur.execute("PRAGMA foreign_keys=ON")
             cur.close()
     return engine
+
+
+def engine_from_settings(settings) -> Engine:
+    return make_engine(settings.database_url, settings.sql_echo, pool_size=settings.database_pool_size,
+                       max_overflow=settings.database_max_overflow,
+                       pool_recycle=settings.database_pool_recycle_seconds,
+                       sslmode=settings.database_sslmode,
+                       disable_prepared_statements=settings.database_disable_prepared_statements)
 
 
 def make_session_factory(engine: Engine) -> sessionmaker[Session]:

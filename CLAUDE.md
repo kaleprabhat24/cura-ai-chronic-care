@@ -7,9 +7,10 @@ deterioration or diagnosis. Never present synthetic results as clinical evidence
 - Plan and milestone status: `docs/ARCHITECTURE.md`. Rules: `docs/PREDICTION_TARGET.md`.
   Schema: `docs/DATA_DICTIONARY.md`. Decisions: `docs/DECISIONS.md` (add an ADR for any
   non-obvious choice).
-- Status: **M1–M5 done** (data, features, models, backend). Selected model: logistic regression,
-  bundle `ml/artifacts/models/cura-fu-1.0.0/`. Backend: `backend/src/cura_api` (FastAPI, SQLAlchemy,
-  Alembic; SQLite default). Next: frontend (M6+). Production auth (Supabase) is NOT implemented.
+- Status: **all milestones implemented** (data, features, models, backend, frontend, Supabase auth code,
+  FHIR export). Not deployed; Supabase live connectivity and the HL7 FHIR validator not verified.
+- Frontend: `frontend/` (Next.js 15, typed client from `backend/openapi.json` via `npm run gen:api`).
+  After changing API schemas: `cura-api openapi` then `npm --prefix frontend run gen:api`.
 - Features: `docs/FEATURES.md` is generated from `ml/src/cura_ml/features/spec.py`. Never edit it by hand.
 
 ## Commands (Windows; project-local venv, since uv was not installed)
@@ -25,6 +26,8 @@ deterioration or diagnosis. Never present synthetic results as clinical evidence
 .venv\Scripts\cura-api seed               # load ml/data/v1 into the DB (idempotent)
 .venv\Scripts\cura-api score              # batch-score eligible episodes (new snapshot per run)
 .venv\Scripts\cura-api serve              # API on http://127.0.0.1:8000 (/docs); dev headers X-Dev-User/X-Dev-Role
+npm --prefix frontend run dev             # web app on http://localhost:3000 (dev identity picker)
+npm --prefix frontend test; npm --prefix frontend run build   # frontend checks
 ```
 With uv installed: `uv sync` then `uv run pytest`, `uv run cura-ml all`.
 
@@ -38,6 +41,7 @@ With uv installed: `uv sync` then `uv run pytest`, `uv run cura-ml all`.
 - Generator determinism: one `SeedSequence` child per patient. Keep random draws per patient in a
   fixed order.
 - Times are UTC; observations carry UCUM units validated against `synth/catalog.py`.
+- Never present a historical score as a current prediction: use `score_context` (ADR-018).
 - Backend: read endpoints never score; scoring runs are append-only snapshots. Schema changes need a
   new Alembic migration (`backend/src/cura_api/migrations/versions`). Every payload states `provenance`.
 

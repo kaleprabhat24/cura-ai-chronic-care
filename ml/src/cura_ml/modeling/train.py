@@ -9,7 +9,6 @@ Data flow (no step reads the test split before the final evaluation):
 
 from __future__ import annotations
 
-import hashlib
 import json
 import platform
 from pathlib import Path
@@ -29,7 +28,7 @@ from cura_ml.config import config_hash
 from cura_ml.dataset import content_hash, load_records, read_table
 from cura_ml.features import spec as S
 from cura_ml.features.build import build_features
-from cura_ml.manifest import read_manifest
+from cura_ml.manifest import data_fingerprint, read_manifest  # noqa: F401 - re-exported
 from cura_ml.modeling import metrics as M
 from cura_ml.modeling.bundle import assign_tiers, load_bundle, save_bundle
 from cura_ml.modeling.explain import contributions, global_importance, native_tree_contributions
@@ -47,13 +46,6 @@ from cura_ml.modeling.splits import assign_splits
 
 MODEL_NAMES = ("prevalence_baseline", "attendance_heuristic", "logistic_regression", "xgboost")
 FEATURES_FILE = Path("features") / "episode_features.parquet"
-
-
-def data_fingerprint(manifest: dict[str, Any]) -> str:
-    parts = {"config_sha256": manifest["config_sha256"],
-             **{k: v["content_sha256"] for k, v in sorted(manifest["files"].items())
-                if not k.startswith("hidden/")}}
-    return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
 
 
 def build_feature_table(cohort_cfg: dict[str, Any], data_dir: str | Path,

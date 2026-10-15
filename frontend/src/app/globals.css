@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* Cura AI design tokens: restrained slate neutrals, a single teal accent, muted risk colours.
+   Tiers are always shown with a text label as well as colour. */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, SFMono-Regular, monospace;
+
+  --color-background: #f6f8f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f4f6;
+  --color-border: #e2e8ec;
+  --color-border-strong: #cbd5dc;
+  --color-ink: #0f1d26;
+  --color-ink-muted: #4a5b67;
+  --color-ink-subtle: #7a8a95;
+
+  --color-brand: #0f766e;
+  --color-brand-strong: #115e59;
+  --color-brand-soft: #e6f4f2;
+  --color-brand-ring: #5eb8ae;
+
+  --color-tier-high: #b42318;
+  --color-tier-high-soft: #fdf0ee;
+  --color-tier-medium: #b54708;
+  --color-tier-medium-soft: #fef6ec;
+  --color-tier-low: #475467;
+  --color-tier-low-soft: #f2f4f7;
+
+  --color-ok: #067647;
+  --color-ok-soft: #ecfdf3;
+  --color-warn: #b54708;
+  --color-warn-soft: #fffaeb;
+  --color-danger: #b42318;
+  --color-danger-soft: #fef3f2;
+  --color-info: #175cd3;
+  --color-info-soft: #eff8ff;
+
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgb(15 29 38 / 0.04), 0 1px 3px rgb(15 29 38 / 0.06);
+}
+
+html,
+body {
+  background: var(--color-background);
+  color: var(--color-ink);
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-ring);
+  outline-offset: 2px;
+}
+
+/* Recharts: inherit typography */
+.recharts-text,
+.recharts-legend-item-text {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  fill: var(--color-ink-muted);
+}

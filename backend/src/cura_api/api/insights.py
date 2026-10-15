@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter, defaultdict
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -16,8 +17,7 @@ from cura_api import schemas as s
 from cura_api.api.common import PageParams, SessionDep, latest_load, latest_run, run_out
 from cura_api.auth import ADMIN, ANALYTICS, ANY_ROLE, Principal
 from cura_api.errors import ERROR_RESPONSES, ApiError, ErrorResponse
-from cura_ml.manifest import read_manifest
-from cura_ml.modeling.train import data_fingerprint
+from cura_ml.manifest import data_fingerprint, read_manifest
 
 router = APIRouter(responses=ERROR_RESPONSES)
 VERSION = re.compile(r"^[A-Za-z0-9._-]{1,60}$")
@@ -48,6 +48,17 @@ def outcomes(session: SessionDep, _: Annotated[Principal, Depends(ANY_ROLE)]) ->
             if outcome in s.REACHED:
                 phone[origin][0] += n
     contact = {o: (r / t if t else None) for o, (r, t) in phone.items()}
+    month_start = date(as_of.year - 2, as_of.month, 1)
+    monthly: dict[tuple[str, str, str], int] = Counter()
+    for when, origin, outcome, channel in session.execute(
+            select(m.OutreachAttempt.attempted_at, m.OutreachAttempt.origin, m.OutreachAttempt.outcome,
+                   m.OutreachAttempt.channel)
+            .where(m.OutreachAttempt.attempted_at >= datetime.combine(month_start, time.min, tzinfo=UTC))):
+        group = ("letter" if channel == "letter" else
+                 "reached" if outcome in s.REACHED else "not_reached")
+        monthly[(when.strftime("%Y-%m"), origin, group)] += 1
+    attempts_by_month = [{"month": k[0], "origin": k[1], "group": k[2], "attempts": n}
+                         for k, n in sorted(monthly.items())]
     open_actions = session.execute(
         select(func.count()).select_from(m.OutreachAttempt)
         .join(m.EpisodeOutcome, m.EpisodeOutcome.episode_id == m.OutreachAttempt.episode_id)
@@ -72,7 +83,8 @@ def outcomes(session: SessionDep, _: Annotated[Principal, Depends(ANY_ROLE)]) ->
                 for k, (n, c) in sorted(groups.items(), key=lambda kv: str(kv[0]))]
 
     return s.OutcomesSummary(
-        as_of=as_of, attempts_by_origin=dict(by_origin), attempts_by_outcome=dict(by_outcome),
+        as_of=as_of, attempts_by_month=attempts_by_month, attempts_by_origin=dict(by_origin),
+        attempts_by_outcome=dict(by_outcome),
         attempts_by_channel=dict(by_channel), phone_contact_rate=contact, app_open_next_actions=open_actions,
         completion_by_year=summarise(lambda r: r.prediction_at.year),
         completion_by_programme=summarise(lambda r: r.programme),
@@ -100,14 +112,33 @@ def _bundle_info(bundle_dir: Path) -> s.ModelInfo:
         test_metrics={k: {x: v[x] for x in keys} for k, v in ev["test"]["point"].items()},
         test_intervals=ev["test"]["bootstrap"]["models"],
         validation_metrics={k: {x: v[x] for x in keys} for k, v in ev["validation"].items()},
-        library_versions=md["library_versions"], synthetic_data_only=md["synthetic_data_only"],
-        disclaimer=DISCLAIMER)
+        library_versions=md["library_versions"],
+        calibration_table=ev["test"].get("calibration_table", []),
+        test_tiers=ev["test"].get("tiers", []),
+        feature_importance=(ev.get("feature_importance", {}).get(md["model_type"], {})
+                            .get("features", [])[:12]),
+        synthetic_data_only=md["synthetic_data_only"], disclaimer=DISCLAIMER)
 
 
 @router.get("/models/current", response_model=s.ModelInfo, tags=["model"],
             summary="Model version used for scoring, with evaluation results")
 def model_current(request: Request, _: Annotated[Principal, Depends(ANY_ROLE)]) -> s.ModelInfo:
     return _bundle_info(request.app.state.settings.model_bundle_dir)
+
+
+@router.get("/models/current/documents", response_model=s.ModelDocuments, tags=["model"],
+            summary="Model card and evaluation report (Markdown) for the scoring model")
+def model_documents(request: Request, _: Annotated[Principal, Depends(ANY_ROLE)]) -> s.ModelDocuments:
+    settings = request.app.state.settings
+    md_path = settings.model_bundle_dir / "metadata.json"
+    if not md_path.exists():
+        raise ApiError(404, "not_found", "No model bundle is configured.")
+    version = json.loads(md_path.read_text("utf-8"))["model_version"]
+    card = settings.model_bundle_dir / "model_card.md"
+    report = settings.model_reports_dir / f"model_{version}.md"
+    return s.ModelDocuments(model_version=version,
+                            model_card_markdown=card.read_text("utf-8") if card.exists() else None,
+                            model_report_markdown=report.read_text("utf-8") if report.exists() else None)
 
 
 @router.get("/models/{model_version}", response_model=s.ModelInfo, tags=["model"],
@@ -233,3 +264,12 @@ def audit_events(session: SessionDep, _: Annotated[Principal, Depends(ADMIN)],
                            .limit(paging.page_size)).scalars()
     return s.Page[s.AuditEventOut](items=[s.AuditEventOut.model_validate(r) for r in rows],
                                    **paging.meta(total))
+
+
+@router.get("/admin/users", response_model=list[s.AppUserOut], tags=["admin"],
+            summary="Provisioned application users and roles")
+def admin_users(session: SessionDep, _: Annotated[Principal, Depends(ADMIN)]) -> list[s.AppUserOut]:
+    rows = session.execute(select(m.AppUser).order_by(m.AppUser.email)).scalars()
+    return [s.AppUserOut(id=u.id, email=u.email, display_name=u.display_name, role=u.role,
+                         is_active=u.is_active, linked_to_auth_identity=u.auth_user_id is not None,
+                         created_at=u.created_at, last_sign_in_at=u.last_sign_in_at) for u in rows]

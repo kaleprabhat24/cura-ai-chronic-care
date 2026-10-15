@@ -27,6 +27,10 @@ EventType = Literal["appointment", "encounter", "observation", "medication_start
                     "outreach", "risk_score", "followup_due"]
 OutcomeStatus = Literal["open", "open_overdue", "completed_on_time", "completed_late", "censored",
                         "not_eligible"]
+FollowUpStatus = Literal["upcoming", "due_in_grace_window", "overdue_unresolved", "completed", "censored",
+                         "not_eligible"]
+ScoreStatus = Literal["predictive", "historical", "no_score"]
+WorklistQueue = Literal["all", "predictive", "overdue", "no_score"]
 REACHED: tuple[str, ...] = ("reached_booked", "reached_declined", "reached_already_done")
 
 
@@ -48,6 +52,31 @@ class Factor(BaseModel):
     recorded: bool
     contribution_log_odds: float
     direction: str
+    window: str | None = Field(default=None, description="Look-back window of the feature at prediction time")
+    source: str | None = None
+
+
+class ScoreContext(BaseModel):
+    """How to read a score for this episode at the data cutoff (`as_of`).
+
+    * follow_up_status — recorded state of the follow-up: upcoming (before due date),
+      due_in_grace_window (past due, 30-day completion window still open), overdue_unresolved (not
+      completed by the end of the window: an observed outcome needing operational follow-up),
+      completed, censored, not_eligible.
+    * score_status — predictive (outcome not yet known, so the probability is a live prediction),
+      historical (the outcome window has closed or the episode is resolved; the probability is a past
+      prediction kept for provenance), no_score.
+    """
+
+    as_of: date
+    follow_up_status: FollowUpStatus
+    score_status: ScoreStatus
+    outcome_window_ended: bool
+    outcome_mature: bool
+    days_overdue: int
+    score_age_days: int | None
+    data_sufficiency: Literal["adequate", "limited_history"]
+    summary: str
 
 
 class PatientSummary(BaseModel):
@@ -108,6 +137,7 @@ class Me(BaseModel):
     user_id: str
     role: str
     auth_mode: str
+    display_name: str | None = None
 
 
 # ---------------------------------------------------------------- scoring runs
@@ -155,6 +185,12 @@ class DashboardSummary(BaseModel):
     outreach_last_30_days: int
     completion_last_12_months: dict[str, Any]
     latest_scoring_run: ScoringRunOut | None
+    open_upcoming: int = 0
+    open_in_grace_window: int = 0
+    open_overdue_unresolved: int = 0
+    predictive_by_tier: dict[str, int] = Field(
+        default_factory=dict, description="Tiers of open episodes whose score is still predictive")
+    open_limited_history: int = 0
     notes: list[str]
 
 
@@ -171,6 +207,7 @@ class WorklistItem(BaseModel):
     last_outreach: OutreachSummary | None
     outreach_attempts: int
     recorded_outcome: RecordedOutcome
+    score_context: ScoreContext
 
 
 class WorklistPage(Page[WorklistItem]):
@@ -244,6 +281,7 @@ class EpisodeOut(BaseModel):
     is_cold_start: bool | None
     recorded_outcome: RecordedOutcome
     latest_prediction: PredictionSummary | None
+    score_context: ScoreContext
 
 
 class PatientDetail(BaseModel):
@@ -308,6 +346,8 @@ class RiskScoreDetail(BaseModel):
     explanation: Explanation
     features: list[FeatureValue]
     run: ScoringRunOut
+    is_latest_run: bool
+    score_context: ScoreContext
     interpretation: str
 
 
@@ -375,8 +415,14 @@ class OutreachOut(BaseModel):
     recorded_by: str
 
 
+class OutreachListItem(OutreachOut):
+    patient: PatientSummary
+    follow_up_status: FollowUpStatus | None = None
+
+
 class OutcomesSummary(BaseModel):
     as_of: date
+    attempts_by_month: list[dict[str, Any]] = Field(default_factory=list)
     attempts_by_origin: dict[str, int]
     attempts_by_outcome: dict[str, dict[str, int]]
     attempts_by_channel: dict[str, int]
@@ -406,8 +452,29 @@ class ModelInfo(BaseModel):
     test_intervals: dict[str, dict[str, list[float]]]
     validation_metrics: dict[str, dict[str, Any]]
     library_versions: dict[str, str]
+    calibration_table: list[dict[str, float]] = Field(default_factory=list)
+    test_tiers: list[dict[str, Any]] = Field(default_factory=list)
+    feature_importance: list[dict[str, Any]] = Field(default_factory=list)
     synthetic_data_only: bool
     disclaimer: str
+
+
+class ModelDocuments(BaseModel):
+    model_version: str
+    model_card_markdown: str | None
+    model_report_markdown: str | None
+
+
+class AppUserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    email: str
+    display_name: str | None
+    role: str
+    is_active: bool
+    linked_to_auth_identity: bool
+    created_at: datetime
+    last_sign_in_at: datetime | None
 
 
 class DataQuality(BaseModel):

@@ -29,6 +29,14 @@ def main(argv: list[str] | None = None) -> None:
     serve.add_argument("--reload", action="store_true")
     oa = sub.add_parser("openapi", help="write the OpenAPI document")
     oa.add_argument("--out", default="backend/openapi.json")
+    users = sub.add_parser("users", help="provision application users and roles (Supabase mode)")
+    users.add_argument("action", choices=["add", "list", "set-role", "deactivate", "activate"])
+    users.add_argument("email", nargs="?")
+    users.add_argument("--role", choices=["coordinator", "analyst", "admin"])
+    users.add_argument("--name", default=None)
+    fx = sub.add_parser("fhir-export", help="write a patient's FHIR R4-oriented Bundle and validate it")
+    fx.add_argument("patient_id")
+    fx.add_argument("--out", default=None)
     args = parser.parse_args(argv)
 
     settings = get_settings()
@@ -37,14 +45,14 @@ def main(argv: list[str] | None = None) -> None:
         from cura_api import migrate
 
         if args.action == "upgrade":
-            migrate.upgrade(settings.database_url, args.revision or "head")
+            migrate.upgrade(settings.database_url, args.revision or "head", settings=settings)
         else:
-            migrate.downgrade(settings.database_url, args.revision or "base")
+            migrate.downgrade(settings.database_url, args.revision or "base", settings=settings)
         print(f"database {args.action} done: {_redact(settings.database_url)}")
     elif args.command in ("seed", "score"):
-        from cura_api.db import make_engine, make_session_factory
+        from cura_api.db import engine_from_settings, make_session_factory
 
-        engine = make_engine(settings.database_url, settings.sql_echo)
+        engine = engine_from_settings(settings)
         factory = make_session_factory(engine)
         if args.command == "seed":
             from cura_api.services.seed import seed_database
@@ -58,6 +66,47 @@ def main(argv: list[str] | None = None) -> None:
                                  allow_fingerprint_mismatch=args.allow_fingerprint_mismatch)
         engine.dispose()
         print(json.dumps(result, indent=2, default=str))
+    elif args.command == "users":
+        from cura_api.db import engine_from_settings, make_session_factory
+        from cura_api.services import users as u
+
+        engine = engine_from_settings(settings)
+        factory = make_session_factory(engine)
+        try:
+            if args.action == "list":
+                result = u.list_users(factory)
+            elif not args.email:
+                parser.error("email is required")
+            elif args.action == "add":
+                if not args.role:
+                    parser.error("--role is required")
+                result = u.add_user(factory, args.email, args.role, args.name)
+            elif args.action == "set-role":
+                if not args.role:
+                    parser.error("--role is required")
+                result = u.update_user(factory, args.email, role=args.role)
+            else:
+                result = u.update_user(factory, args.email, active=args.action == "activate")
+        except u.UserError as exc:
+            parser.exit(2, f"error: {exc}" + chr(10))
+        engine.dispose()
+        print(json.dumps(result, indent=2, default=str))
+    elif args.command == "fhir-export":
+        from cura_api.api.common import latest_load
+        from cura_api.db import engine_from_settings, make_session_factory
+        from cura_api.services.fhir import build_bundle, r4b_parse_errors, structural_problems
+
+        engine = engine_from_settings(settings)
+        with make_session_factory(engine)() as session:
+            bundle = build_bundle(session, args.patient_id, latest_load(session).data_cutoff)
+        engine.dispose()
+        out = Path(args.out or f"cura-ai-{args.patient_id}-fhir-bundle.json")
+        out.write_text(json.dumps(bundle, indent=2), encoding="utf-8")
+        problems, parse = structural_problems(bundle), r4b_parse_errors(bundle)
+        print(f"{len(bundle['entry'])} resources -> {out}")
+        print(f"structural checks: {problems or 'ok'}")
+        print(f"fhir.resources R4B model parsing: {parse or 'ok'}")
+        print("note: not validated with the official HL7 FHIR validator (see docs/FHIR_EXPORT.md)")
     elif args.command == "serve":
         import uvicorn
 

@@ -19,6 +19,7 @@ from cura_api.api.common import (
     patient_summary,
     prediction_summary,
     recorded_outcome,
+    score_context,
 )
 from cura_api.api.core import episode_base, open_episode_filter
 from cura_api.auth import CLINICAL, Principal
@@ -50,6 +51,11 @@ def worklist(
     overdue: bool | None = None,
     status: Annotated[Literal["open", "all"], Query(description="open = awaiting completion at the "
                                                                 "data cutoff")] = "open",
+    queue: Annotated[s.WorklistQueue, Query(
+        description="predictive = open, outcome window still running, scored (risk is a live "
+                    "prediction); overdue = open past the outcome window (recorded as not completed: "
+                    "operational follow-up, score is historical); no_score = open without a score in "
+                    "the latest run; all = no restriction")] = "all",
 ) -> s.WorklistPage:
     if due_from and due_to and due_from > due_to:
         raise ApiError(422, "validation_error", "due_from must not be after due_to",
@@ -87,6 +93,12 @@ def worklist(
     if overdue is not None:
         query = query.where(m.FollowupEpisode.due_date < as_of if overdue
                             else m.FollowupEpisode.due_date >= as_of)
+    if queue == "predictive":
+        query = query.where(m.FollowupEpisode.window_end_date >= as_of, m.RiskScore.id.is_not(None))
+    elif queue == "overdue":
+        query = query.where(m.FollowupEpisode.window_end_date < as_of)
+    elif queue == "no_score":
+        query = query.where(m.RiskScore.id.is_(None))
 
     default_desc = {"priority": False, "probability": True, "due_date": False, "last_contact": True,
                     "patient_name": False}
@@ -116,6 +128,7 @@ def worklist(
             last_outreach=None if lo is None else s.OutreachSummary(
                 id=lo.id, attempted_at=lo.attempted_at, channel=lo.channel, outcome=lo.outcome,
                 origin=lo.origin),
-            outreach_attempts=n or 0, recorded_outcome=recorded_outcome(ep, out, as_of)))
+            outreach_attempts=n or 0, recorded_outcome=recorded_outcome(ep, out, as_of),
+            score_context=score_context(ep, out, rs, as_of)))
     return s.WorklistPage(items=items, as_of=as_of, scoring_run_id=run.id if run else None,
                           **paging.meta(total))

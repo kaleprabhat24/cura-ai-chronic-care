@@ -3,29 +3,37 @@
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 from datetime import UTC, date, datetime, time
 from typing import Annotated, Literal, get_args
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import select
+from fastapi.responses import JSONResponse
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from cura_api import models as m
 from cura_api import schemas as s
 from cura_api.api.common import (
     CONDITION_LABELS,
+    PageParams,
     SessionDep,
     age_at,
+    factor,
+    follow_up_status,
     latest_load,
     latest_run,
+    patient_summary,
     prediction_summary,
     recorded_outcome,
     run_out,
+    score_context,
 )
 from cura_api.auth import CLINICAL, Principal
 from cura_api.db import utcnow
 from cura_api.errors import ERROR_RESPONSES, ApiError, ErrorResponse
 from cura_api.services import audit
+from cura_api.services.fhir import build_bundle
 from cura_ml.features import spec as S
 
 router = APIRouter(responses=ERROR_RESPONSES)
@@ -64,7 +72,8 @@ def _episode_out(ep: m.FollowupEpisode, out: m.EpisodeOutcome, as_of: date,
                         window_end_date=ep.window_end_date, eligible=ep.eligible,
                         ineligible_reason=ep.ineligible_reason, is_cold_start=ep.is_cold_start,
                         recorded_outcome=recorded_outcome(ep, out, as_of),
-                        latest_prediction=prediction_summary(score))
+                        latest_prediction=prediction_summary(score),
+                        score_context=score_context(ep, out, score, as_of))
 
 
 # ------------------------------------------------------------------------------------------ patients
@@ -252,6 +261,9 @@ def risk_score_detail(risk_score_id: int, session: SessionDep,
     if r is None:
         raise ApiError(404, "not_found", f"Risk score {risk_score_id} not found.")
     run = session.get(m.ScoringRun, r.scoring_run_id)
+    as_of = latest_load(session).data_cutoff
+    ep, out = _episode(session, r.episode_id)
+    newest = latest_run(session)
     feats = []
     for col, value in r.feature_snapshot.items():
         base = S.FEATURE_BY_NAME[S.base_feature(col)]
@@ -265,9 +277,10 @@ def risk_score_detail(risk_score_id: int, session: SessionDep,
         scored_at=r.scored_at,
         explanation=s.Explanation(method=e["method"], base_log_odds=e["base_log_odds"],
                                   model_log_odds=e["model_log_odds"],
-                                  factors=[s.Factor(**f) for f in e["factors"]], units=e["units"],
+                                  factors=[factor(f) for f in e["factors"]], units=e["units"],
                                   note=e["note"]),
-        features=feats, run=run_out(run),
+        features=feats, run=run_out(run), is_latest_run=bool(newest and newest.id == run.id),
+        score_context=score_context(ep, out, r, as_of),
         interpretation=("Simulated prediction from a model trained on synthetic data: the calibrated "
                         "probability that this follow-up is still incomplete 30 days after its due date. "
                         "Feature values are those recorded before the prediction time. It is not a "
@@ -313,3 +326,59 @@ def create_outreach(episode_id: str, body: s.OutreachCreate, session: SessionDep
         session.rollback()
         raise
     return s.OutreachOut.model_validate(attempt)
+
+
+# ------------------------------------------------------------------------------------------ outreach list
+@router.get("/outreach-attempts", response_model=s.Page[s.OutreachListItem], tags=["outreach"],
+            summary="Outreach attempts across patients (newest first, or by next-action date)")
+def list_outreach(
+    session: SessionDep, _: Annotated[Principal, Depends(CLINICAL)],
+    paging: Annotated[PageParams, Depends()],
+    origin: Literal["app", "historical_simulation"] | None = None,
+    outcome: Annotated[list[s.Outcome] | None, Query(description="repeatable")] = None,
+    pending_next_action: Annotated[bool | None, Query(
+        description="true = a next action is set and the follow-up is still open")] = None,
+    sort: Literal["recorded_at", "next_action_due"] = "recorded_at",
+) -> s.Page[s.OutreachListItem]:
+    as_of = latest_load(session).data_cutoff
+    base = (select(m.OutreachAttempt, m.Patient, m.FollowupEpisode, m.EpisodeOutcome)
+            .join(m.Patient, m.Patient.id == m.OutreachAttempt.patient_id)
+            .outerjoin(m.FollowupEpisode, m.FollowupEpisode.id == m.OutreachAttempt.episode_id)
+            .outerjoin(m.EpisodeOutcome, m.EpisodeOutcome.episode_id == m.OutreachAttempt.episode_id))
+    if origin:
+        base = base.where(m.OutreachAttempt.origin == origin)
+    if outcome:
+        base = base.where(m.OutreachAttempt.outcome.in_(outcome))
+    if pending_next_action is not None:
+        cond = (m.OutreachAttempt.next_action != "none") & m.EpisodeOutcome.completed_at.is_(None)
+        base = base.where(cond if pending_next_action else ~cond)
+    order = ([m.OutreachAttempt.next_action_due.asc().nulls_last(), m.OutreachAttempt.id]
+             if sort == "next_action_due" else
+             [m.OutreachAttempt.recorded_at.desc(), m.OutreachAttempt.id])
+    total = session.execute(select(func.count()).select_from(base.subquery())).scalar_one()
+    rows = session.execute(base.order_by(*order).offset(paging.offset).limit(paging.page_size)).all()
+    items = []
+    for o, p, ep, out in rows:
+        base_out = s.OutreachOut.model_validate(o).model_dump()
+        items.append(s.OutreachListItem(**base_out, patient=patient_summary(p, as_of),
+                                        follow_up_status=follow_up_status(ep, out, as_of) if ep else None))
+    return s.Page[s.OutreachListItem](items=items, **paging.meta(total))
+
+
+# ------------------------------------------------------------------------------------------ FHIR export
+@router.get("/patients/{patient_id}/fhir", tags=["patients"],
+            summary="Export the patient's synthetic record as a FHIR R4-oriented Bundle (JSON)",
+            responses={**NOT_FOUND, 200: {"content": {"application/fhir+json": {}},
+                                          "description": "FHIR Bundle (type collection)"}})
+def export_fhir(patient_id: str, session: SessionDep,
+                principal: Annotated[Principal, Depends(CLINICAL)]) -> JSONResponse:
+    as_of = latest_load(session).data_cutoff
+    _patient(session, patient_id)
+    bundle = build_bundle(session, patient_id, as_of)
+    counts = dict(Counter(e["resource"]["resourceType"] for e in bundle["entry"]))
+    audit.record(session, principal.user_id, principal.role, "fhir.export", "patient", patient_id,
+                 {"bundle_id": bundle["id"], "resource_counts": counts})
+    session.commit()
+    return JSONResponse(bundle, media_type="application/fhir+json",
+                        headers={"Content-Disposition":
+                                 f'attachment; filename="cura-ai-{patient_id}-fhir-bundle.json"'})

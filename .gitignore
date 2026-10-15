@@ -29,3 +29,8 @@ node_modules/
 
 # Local backend database (SQLite)
 backend/var/
+
+# Frontend build artefacts / local env
+*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/.env.local

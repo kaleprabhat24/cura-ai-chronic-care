@@ -39,15 +39,15 @@ def test_authentication_required_and_roles_enforced(client):
     assert client.get(f"{API}/dashboard/summary", headers=ANALYST).status_code == 200
     assert client.get(f"{API}/data-quality", headers=ANALYST).status_code == 200
     assert client.get(f"{API}/audit-events", headers=ADMIN).status_code == 200
-    assert client.get(f"{API}/me", headers=COORD).json() == {"user_id": "coord.test",
-                                                             "role": "coordinator", "auth_mode": "dev"}
+    assert client.get(f"{API}/me", headers=COORD).json() == {
+        "user_id": "coord.test", "role": "coordinator", "auth_mode": "dev", "display_name": None}
 
 
-def test_dev_auth_refuses_production_and_supabase_is_not_pretended(env):
+def test_dev_auth_refuses_production_and_supabase_requires_configuration(env):
     with pytest.raises(RuntimeError, match="refuses to run"):
         create_app(make_settings(env.root, env.database_url, env.data_dir, env.bundle_dir,
                                  environment="production"))
-    with pytest.raises(RuntimeError, match="not implemented"):
+    with pytest.raises(RuntimeError, match="requires SUPABASE_URL"):
         create_app(make_settings(env.root, env.database_url, env.data_dir, env.bundle_dir,
                                  auth_mode="supabase"))
 

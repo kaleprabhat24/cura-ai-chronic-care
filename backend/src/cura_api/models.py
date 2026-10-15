@@ -226,6 +226,23 @@ class RiskScore(Base):
     feature_snapshot: Mapped[dict] = mapped_column(JSON)
 
 
+class AppUser(Base):
+    """Application users and their roles. With Supabase Auth, a verified token's `sub` is bound to the
+    row (by `auth_user_id`, or on first sign-in by matching the verified `email`). Unknown or inactive
+    users are refused, so the role always comes from this table and never from the client."""
+
+    __tablename__ = "app_users"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    display_name: Mapped[str | None] = mapped_column(String(120))
+    role: Mapped[str] = mapped_column(String(16))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    auth_user_id: Mapped[str | None] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    last_sign_in_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

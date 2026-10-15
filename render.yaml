@@ -1,0 +1,32 @@
+# Render Blueprint for the Cura AI API (FastAPI). Not deployed or verified by the project author.
+# Create a Blueprint from this repository in the Render dashboard, then fill in the `sync: false`
+# variables (secrets are never stored in this file). See docs/DEPLOYMENT.md and docs/SUPABASE_SETUP.md.
+services:
+  - type: web
+    name: cura-ai-api
+    runtime: python
+    plan: starter            # the free plan sleeps; SQLite is refused in production, use Supabase Postgres
+    buildCommand: >-
+      pip install --upgrade pip &&
+      pip install -e ml -e "backend[postgres]" &&
+      cura-ml all
+    # Runs on every deploy before the new version starts (Render paid plans). On the free plan run
+    # `cura-api db upgrade` yourself from a local machine against the Supabase DATABASE_URL instead.
+    preDeployCommand: cura-api db upgrade
+    startCommand: cura-api serve --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.9"
+      - key: ENVIRONMENT
+        value: production
+      - key: AUTH_MODE
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false          # https://<project-ref>.supabase.co
+      - key: DATABASE_URL
+        sync: false          # Supabase session-pooler connection string (contains the DB password)
+      - key: DATABASE_SSLMODE
+        value: require
+      - key: CORS_ORIGINS
+        sync: false          # e.g. ["https://cura-ai.vercel.app"]

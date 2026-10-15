@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from cura_api import __version__, errors
 from cura_api.api import core, insights, patients, worklist
-from cura_api.db import make_engine, make_session_factory
+from cura_api.auth import build_verifier
+from cura_api.db import engine_from_settings, make_session_factory
 from cura_api.settings import Settings, get_settings
 
 API_PREFIX = "/api/v1"
@@ -21,20 +22,22 @@ Backend for **Cura AI**, a chronic-disease follow-up prioritisation demo. **All 
   They are never recomputed when a page is opened.
 * Every payload labels its provenance: `simulated_prediction`, `recorded_synthetic_clinical`,
   `recorded_synthetic_outcome` or `recorded_outreach_outcome`.
-* **Authentication:** only a local development mode exists (`X-Dev-User` / `X-Dev-Role` headers;
-  roles `coordinator`, `analyst`, `admin`). It refuses to run in production. Production
-  authentication is not implemented yet.
+* **Authentication:** `AUTH_MODE=supabase` verifies Supabase Auth access tokens
+  (`Authorization: Bearer ...`) and maps them to provisioned `app_users` roles (`coordinator`,
+  `analyst`, `admin`). `AUTH_MODE=dev` (local only, refused in production) accepts `X-Dev-User` /
+  `X-Dev-Role` headers.
 * Errors have the shape `{"error": {"code", "message", "details"}}`.
 """
 
 
 def create_app(settings: Settings | None = None,
-               session_factory: sessionmaker[Session] | None = None) -> FastAPI:
+               session_factory: sessionmaker[Session] | None = None,
+               token_verifier=None) -> FastAPI:
     settings = settings or get_settings()
     settings.check_runtime()
     engine = None
     if session_factory is None:
-        engine = make_engine(settings.database_url, settings.sql_echo)
+        engine = engine_from_settings(settings)
         session_factory = make_session_factory(engine)
 
     @asynccontextmanager
@@ -49,8 +52,11 @@ def create_app(settings: Settings | None = None,
                                                       "admin")])
     app.state.settings = settings
     app.state.session_factory = session_factory
+    app.state.token_verifier = token_verifier or (build_verifier(settings)
+                                                  if settings.auth_mode == "supabase" else None)
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False,
-                       allow_methods=["GET", "POST"], allow_headers=["*"])
+                       allow_methods=["GET", "POST"],
+                       allow_headers=["Authorization", "Content-Type", "X-Dev-User", "X-Dev-Role"])
     errors.install(app)
     for router in (core.router, worklist.router, patients.router, insights.router):
         app.include_router(router, prefix=API_PREFIX)

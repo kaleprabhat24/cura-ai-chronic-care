@@ -30,9 +30,8 @@ from cura_ml.cohort.episodes import as_utc
 from cura_ml.dataset import load_records, read_table
 from cura_ml.features import spec as S
 from cura_ml.features.build import build_features
-from cura_ml.manifest import read_manifest
+from cura_ml.manifest import data_fingerprint, read_manifest
 from cura_ml.modeling.bundle import load_bundle
-from cura_ml.modeling.train import data_fingerprint
 
 Scope = Literal["eligible", "open"]
 

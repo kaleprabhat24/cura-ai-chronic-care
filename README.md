@@ -1,127 +1,146 @@
 # Cura AI — chronic-care follow-up prioritisation
 
-> **Synthetic data only. Not for clinical use.** Cura AI predicts whether an expected chronic-care
-> follow-up will still be incomplete 30 days after its due date. It does not predict disease
-> deterioration and makes no diagnosis.
+> **Synthetic demonstration data only. Not for clinical use.** Cura AI estimates whether an expected
+> chronic-care follow-up (type 2 diabetes or hypertension review) will still be incomplete 30 days
+> after its due date. It does not predict disease deterioration, diagnose, or recommend treatment.
+> Model results are a synthetic-data evaluation, not clinical validation.
 
-Status: **Milestones 1–3 complete**. This covers:
-- the synthetic cohort, with follow-up episodes and labels;
-- leakage-safe longitudinal features;
-- baseline, logistic-regression and XGBoost models with calibration, evaluation and per-prediction
-  explanations;
-- an inference-ready model bundle.
+Cura AI has four parts:
+- **`ml/`**: synthetic cohort generator, leakage-safe feature pipeline, models and a saved bundle.
+- **`backend/`**: FastAPI + SQLAlchemy + Alembic API with batch scoring, outreach, audit,
+  Supabase-ready authentication and FHIR export.
+- **`frontend/`**: Next.js + TypeScript + Tailwind + shadcn/ui-style components + Recharts.
+- **`docs/`**: architecture, decisions, prediction target, features, data dictionary, FHIR, Supabase
+  and deployment.
 
-All results are a synthetic-data evaluation, not clinical validation; see the
-[model report](ml/reports/model_cura-fu-1.0.0.md). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-for the full plan.
+## Application
+| Page | What it does | Roles |
+|---|---|---|
+| Dashboard | Open follow-ups by status, predictive priority distribution, due-date load, outreach and completion figures, model/data status, recent activity | all |
+| Worklist | Server-side paginated/sorted/filtered queue. Tabs separate **predictive** risk, **overdue** follow-ups (recorded outcomes; historical scores) and follow-ups with **no usable score**. Each score shows prediction time, scoring time and model version | coordinator, admin |
+| Patient 360 | Summary and conditions, episode score context, the model's actual contribution explanation, score history across runs, HbA1c/BP trends, unified timeline, outreach history and form, FHIR export | coordinator, admin |
+| Outreach | Pending next actions, recorded attempts (all 7 outcome categories), follow-up from a side sheet | coordinator, admin |
+| Outcomes | Monthly attempts, contact outcomes, completion by year, condition and outreach exposure (labelled descriptive, not causal) | all |
+| Model & data | Model version and algorithm, test metrics with bootstrap intervals for all four models, calibration, feature importance, tier results, model card and report. Analyst/admin also see data-quality checks, missingness and scoring runs | all (details: analyst, admin) |
+| Admin & export | FHIR export of a selected patient, plus the audit log and user roles for admins | coordinator (export), admin |
 
-## Quick start (Windows)
+The API enforces every permission. The frontend only hides navigation.
 
-Requires Python ≥ 3.12.
+## Local setup (Windows, PowerShell)
+Prerequisites: Python ≥ 3.12 (verified on 3.13.9) and Node.js 20+ (verified on 22.16).
 
-**Option A — uv (recommended).** Install uv once (per-user install, no admin needed):
-```
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-Then, from the project folder:
-```
-uv sync
-uv run pytest
-uv run cura-ml all
-```
-
-**Option B — standard library venv + pip** (this is how M1 was verified):
 ```
 python -m venv .venv
-.venv\Scripts\python -m pip install -e ml pytest ruff
-.venv\Scripts\python -m pytest -q
+.venv\Scripts\python -m pip install -e ml -e "backend[postgres]" pytest ruff httpx
+cd frontend
+npm install
+cd ..
+```
+(With [uv](https://docs.astral.sh/uv/) installed instead: `uv sync`.)
+
+### 1. Synthetic data (regenerate any time; deterministic for a given seed)
+```
 .venv\Scripts\cura-ml all
 ```
+This writes `ml/data/v1/` (git-ignored) and `ml/reports/cohort_v1_summary.md`.
 
-Then build features, train, and use the saved model:
+### 2. Model: load the saved bundle or retrain
+The committed bundle `ml/artifacts/models/cura-fu-1.0.0/` is used as-is. To retrain and re-evaluate
+(about 20 s), run:
 ```
 .venv\Scripts\cura-ml features
 .venv\Scripts\cura-ml train
 .venv\Scripts\cura-ml evaluate
-.venv\Scripts\cura-ml predict --limit 1
 ```
 
-`cura-ml all` writes `ml/data/v1/` (git-ignored Parquet files and `manifest.json`) and
-`ml/reports/cohort_v1_summary.md`. `cura-ml train` writes the model bundle to
-`ml/artifacts/models/cura-fu-1.0.0/` and the report to `ml/reports/model_cura-fu-1.0.0.md`.
-`predict --episode-id <id>` scores a specific eligible episode.
-
-## Backend API (FastAPI)
-
-The backend runs locally with **no database server, Docker or cloud account**. By default it uses a
-SQLite file at `backend/var/cura_dev.db` (git-ignored). For PostgreSQL, set `DATABASE_URL`
-(see [.env.example](.env.example)) and install the driver with `pip install -e "backend[postgres]"`.
-Prerequisite: the dataset and model bundle from the steps above (`cura-ml all`, then `cura-ml train`
-if `ml/artifacts/models/cura-fu-1.0.0/` is missing).
-
-Install it once (into the same `.venv`):
+### 3. Database, cohort and scoring
+SQLite at `backend/var/cura_dev.db` by default. No server or Docker is needed.
 ```
-.venv\Scripts\python -m pip install -e backend httpx
+.venv\Scripts\cura-api db upgrade
+.venv\Scripts\cura-api seed
+.venv\Scripts\cura-api score
 ```
+`seed` is idempotent and reports inserted/updated/skipped rows. `score` adds a new immutable scoring
+snapshot and keeps earlier ones.
 
-Optionally copy the configuration template (every value has a working default):
+### 4. Start the API and the frontend (two terminals)
 ```
-copy .env.example .env
+.venv\Scripts\cura-api serve
 ```
-
-1. Initialise the database (applies the Alembic migrations):
-   ```
-   .venv\Scripts\cura-api db upgrade
-   ```
-2. Load the generated synthetic cohort. Safe to repeat: it reports inserted, updated and skipped
-   rows, and never touches outreach entered in the app:
-   ```
-   .venv\Scripts\cura-api seed
-   ```
-3. Batch-score eligible episodes with the saved model. Each run is kept as a new snapshot; use
-   `--scope open` to score only episodes still open at the data cutoff:
-   ```
-   .venv\Scripts\cura-api score
-   ```
-4. Start the API, then open http://127.0.0.1:8000/docs for the interactive OpenAPI docs:
-   ```
-   .venv\Scripts\cura-api serve
-   ```
-5. Run all tests (ML and backend):
-   ```
-   .venv\Scripts\python -m pytest -q
-   ```
-
-To regenerate the committed OpenAPI document, run `.venv\Scripts\cura-api openapi`. It writes
-[backend/openapi.json](backend/openapi.json).
-
-**Calling the API locally:** only a *development* authentication mode exists. Send the
-`X-Dev-User: <id>` and `X-Dev-Role: coordinator | analyst | admin` headers. The mode refuses to run
-when `ENVIRONMENT=production`. Production (Supabase) authentication is **not implemented yet**.
 ```
-curl -H "X-Dev-User: coord1" -H "X-Dev-Role: coordinator" "http://127.0.0.1:8000/api/v1/worklist?tier=high&page_size=5"
+npm --prefix frontend run dev
+```
+Open http://localhost:3000 and sign in with the **development identity picker** (choose a role). API
+docs are at http://127.0.0.1:8000/docs. For a production-mode frontend build use
+`npm --prefix frontend run build` then `npm --prefix frontend run start`.
+
+Configuration is optional locally. See [.env.example](.env.example) (backend) and
+[frontend/.env.example](frontend/.env.example). Both list variable names only.
+
+## Supabase (PostgreSQL + Auth)
+Local development needs no Supabase. To use it:
+1. Follow [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) to create the project and run the migrations.
+2. Set `AUTH_MODE=supabase` and `SUPABASE_URL` on the backend.
+3. Set `NEXT_PUBLIC_AUTH_MODE=supabase`, `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   on the frontend.
+4. Provision users with `cura-api users add EMAIL --role ROLE`.
+
+The API verifies Supabase access tokens (signature via the project's JWKS, issuer, audience, expiry,
+claims) and takes the role from `app_users`. Missing or invalid credentials fail closed.
+
+## Tests and checks
+```
+.venv\Scripts\python -m pytest -q
+.venv\Scripts\ruff check ml backend
+npm --prefix frontend run lint
+npm --prefix frontend run typecheck
+npm --prefix frontend test
+npm --prefix frontend run build
+```
+- **Python tests:** synthetic data, leakage, models, persistence, API, score status, Supabase token
+  validation with locally generated keys, FHIR structure, PostgreSQL migration rendering.
+- **Frontend tests:** session handling, API client error mapping, score presentation.
+
+After changing backend schemas, regenerate the API contract and the frontend types:
+```
+.venv\Scripts\cura-api openapi
+npm --prefix frontend run gen:api
 ```
 
-| Endpoint (prefix `/api/v1`) | Roles |
+## Deployment
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md):
+- **Backend:** Render, via [render.yaml](render.yaml).
+- **Frontend:** Vercel, with root directory `frontend`.
+- **Database and Auth:** Supabase.
+
+Required variables:
+
+| Where | Variables |
 |---|---|
-| `GET /health` | public |
-| `GET /me`, `GET /dashboard/summary`, `GET /outreach/outcomes`, `GET /models/current` | all |
-| `GET /worklist`, `GET /patients/{id}`, `GET /patients/{id}/timeline`, `GET /patients/{id}/outreach-attempts`, `GET /episodes/{id}`, `GET /episodes/{id}/risk-scores`, `GET /risk-scores/{id}`, `GET`/`POST /episodes/{id}/outreach-attempts` | coordinator, admin |
-| `GET /models/{version}`, `GET /scoring-runs`, `GET /scoring-runs/{id}`, `GET /data-quality` | analyst, admin |
-| `GET /audit-events` | admin |
+| Render (API) | `ENVIRONMENT=production`, `AUTH_MODE=supabase`, `SUPABASE_URL`, `DATABASE_URL`, `DATABASE_SSLMODE=require`, `CORS_ORIGINS` (optional: `SUPABASE_JWT_SECRET` for legacy HS256 projects, `DATABASE_DISABLE_PREPARED_STATEMENTS` for the transaction pooler) |
+| Vercel (web) | `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_AUTH_MODE=supabase`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_APP_ENV=production` |
+
+## Known limitations
+- **Data and evaluation.** All data is synthetic. Model metrics describe recovery of simulated
+  structure, not clinical performance. Outreach statistics are descriptive.
+- **"Today" is the data cutoff.** The dataset's simulated "today" is 2024-12-31. Many open
+  follow-ups are long overdue: they are shown as recorded outcomes needing operational follow-up,
+  and their stored scores are labelled historical.
+- **Supabase not verified live.** Supabase Auth/PostgreSQL integration is implemented and tested
+  with local keys and offline SQL rendering. It has not been run against a live project.
+- **FHIR.** Export is checked structurally and with `fhir.resources` R4B models. It has not been run
+  through the official HL7 validator, so formal R4 conformance is not claimed (see
+  [docs/FHIR_EXPORT.md](docs/FHIR_EXPORT.md)).
+- **Development sign-in.** It is for local use only and is refused in production.
+- **Not deployed.** Nothing has been deployed by the author.
+- **No compliance claims.** No regulatory compliance (HIPAA, GDPR, etc.) is claimed.
 
 ## Repository
 ```
-ml/configs/cohort_v1.yaml    simulation and episode parameters (seeded)
-ml/configs/train_v1.yaml     splits, tuning grids, calibration, selection rule, capacity, tiers
-ml/src/cura_ml/synth/        event-driven synthetic patient simulator
-ml/src/cura_ml/cohort/       episode/label construction and cohort report
-ml/src/cura_ml/features/     declarative feature spec + leakage-safe feature builder
-ml/src/cura_ml/modeling/     splits, models, calibration, metrics, explanations, bundle, reports
-ml/artifacts/models/         saved, versioned model bundles
-backend/src/cura_api/        FastAPI app, ORM models, Alembic migrations, seeding, batch scoring
-backend/tests/               backend persistence, scoring and API tests
-backend/openapi.json         generated OpenAPI document
-ml/tests/                    acceptance, leakage and modelling tests
-docs/                        architecture, prediction target, features, data dictionary, decisions
+ml/                 synthetic data, features, models (cura_ml) + configs, reports, saved bundles, tests
+backend/            FastAPI app (cura_api): models, migrations, services, API routers, tests, openapi.json
+frontend/           Next.js app: src/app (pages), src/components, src/lib (API client, auth, formatting)
+docs/               ARCHITECTURE, DECISIONS, PREDICTION_TARGET, FEATURES, DATA_DICTIONARY, FHIR_EXPORT,
+                    SUPABASE_SETUP, DEPLOYMENT
+render.yaml         Render blueprint for the API
 ```

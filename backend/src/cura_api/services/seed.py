@@ -30,8 +30,7 @@ from cura_api.db import utcnow
 from cura_api.services import audit
 from cura_ml.cohort.episodes import as_utc
 from cura_ml.dataset import read_table
-from cura_ml.manifest import read_manifest
-from cura_ml.modeling.train import data_fingerprint
+from cura_ml.manifest import data_fingerprint, read_manifest
 
 CHUNK = 5000
 HISTORICAL = "historical_simulation"
