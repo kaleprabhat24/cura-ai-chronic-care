@@ -1,13 +1,17 @@
 [project]
 name = "cura-ml"
 version = "0.1.0"
-description = "Cura AI synthetic cohort generator, follow-up episodes and (later) ML pipeline"
+description = "Cura AI synthetic cohort, follow-up episodes, features and follow-up risk models"
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.0",
     "pandas>=2.2",
     "pyarrow>=17",
     "pyyaml>=6.0",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "shap>=0.46",
+    "joblib>=1.4",
 ]
 
 [project.scripts]

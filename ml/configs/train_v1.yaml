@@ -1,0 +1,54 @@
+# Cura AI follow-up risk model — training configuration v1.
+# Evaluation design (decided before training, see docs/ARCHITECTURE.md §6):
+#   * 20% of patients are held out entirely; the final test set is their episodes in the test year.
+#   * Remaining patients: train on the train years, tune + calibrate + choose thresholds on the
+#     validation year (split by patient into a tuning half and a calibration half).
+#   * Training labels must have matured before the validation year starts, and validation labels
+#     before the test year starts (no outcome information crosses a split boundary).
+
+model_version: cura-fu-1.0.0
+seed: 20251016
+
+splits:
+  holdout_patient_fraction: 0.20
+  train_years: [2020, 2021, 2022]
+  validation_year: 2023
+  test_year: 2024
+  validation_calibration_fraction: 0.5
+
+capacity:
+  primary_fraction: 0.15          # outreach capacity: top 15% of eligible episodes
+  report_fractions: [0.10, 0.15, 0.20]
+
+tiers:                            # thresholds are probability cut-offs fixed on validation data
+  high_fraction: 0.15
+  medium_fraction: 0.25
+
+logistic_regression:
+  C_grid: [0.003, 0.01, 0.03, 0.1, 0.3, 1.0]
+
+xgboost:
+  max_depth_grid: [2, 3, 4]
+  learning_rate: 0.05
+  n_estimators_max: 1000
+  early_stopping_rounds: 50
+  subsample: 0.8
+  colsample_bytree: 0.8
+  min_child_weight: 5
+  reg_lambda: 1.0
+  n_jobs: 4
+
+calibration:
+  methods: [platt, isotonic]
+  cv_folds: 5
+
+selection:                        # applied to the validation calibration half, never the test set
+  # Approved plan: prefer the simpler logistic regression unless XGBoost's PR-AUC advantage has a
+  # paired patient-level bootstrap 95% CI entirely above zero and its Brier score is not worse.
+  xgboost_pr_auc_ci_lower_bound_above: 0.0
+  max_brier_increase_for_xgboost: 0.0
+
+evaluation:
+  bootstrap_resamples: 500
+  calibration_bins: 10
+  suspicious_single_feature_auc: 0.90

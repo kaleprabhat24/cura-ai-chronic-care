@@ -329,8 +329,10 @@ class PatientSimulator:
         self._push(self._workday(due + op["pre_due_reminder_offset_days"]), "reminder", name, ep)
         for k, off in enumerate(op["chase_offsets_days"]):
             self._push(self._workday(due + off), "chase", name, ep, k)
-        for j in range(1, cp["max_re_invites"] + 1):
-            self._push(self._workday(due + j * cp["re_invite_every_days"]), "letter", name, ep)
+        # Recall letters repeat for as long as the review stays overdue (see _on_letter). An earlier
+        # version stopped after a fixed number of letters, which created an absorbing "never
+        # contacted again" state and a steadily drifting episode mix (DECISIONS ADR-011).
+        self._push(self._workday(due + cp["re_invite_every_days"]), "letter", name, ep)
 
     def _p_attend(self, sched_day: int, lead: int) -> float:
         a = self.cfg["attendance"]
@@ -457,8 +459,11 @@ class PatientSimulator:
             self._outreach(name, day, "post_due_chase", "phone")
 
     def _on_letter(self, day: int, name: str, _: Any) -> None:
-        if self.progs[name].booking is None:
+        prog = self.progs[name]
+        if prog.booking is None:
             self._outreach(name, day, "recall_letter", "letter")
+        every = self.cfg["care_process"]["re_invite_every_days"]
+        self._push(self._workday(day + every), "letter", name, prog.ep_no)
 
     def _outreach(self, name: str, day: int, purpose: str, channel: str) -> None:
         rng, op, cp = self.rng, self.cfg["outreach_policy"], self.cfg["care_process"]
@@ -550,10 +555,20 @@ class PatientSimulator:
         self.weight = float(np.clip(self.weight + rng.normal(0, 1.5), 40, 200))
         self._vital(enc_id, "weight", round(self.weight, 1), start_min + 3)
         if name == "t2d":
-            hba1c = float(np.clip(self._hba1c_true(day) + rng.normal(0, cl["hba1c_measure_sd"]),
-                                  4.5, 15.0))
-            lab_rec = (day + int(rng.integers(1, 5))) * MIN_PER_DAY + self._office_min()
-            self._obs(enc_id, "hba1c", round(hba1c, 1), start_min + 5, lab_rec)
+            # HbA1c can be missing: not drawn at the review (more likely for less engaged patients
+            # and during unstable periods) or drawn but the lab produced no result. In both cases no
+            # observation is written; the review itself still happened.
+            p_not_drawn = _sigmoid(cl["hba1c_not_done_base_logit"]
+                                   - cl["hba1c_not_done_engagement_weight"] * self.engagement
+                                   + cl["hba1c_not_done_unstable_weight"] * self._unstable(day))
+            drawn = rng.random() >= p_not_drawn
+            resulted = rng.random() >= cl["hba1c_lab_failure_prob"]
+            hba1c = None
+            if drawn and resulted:
+                hba1c = float(np.clip(self._hba1c_true(day) + rng.normal(0, cl["hba1c_measure_sd"]),
+                                      4.5, 15.0))
+                lab_rec = (day + int(rng.integers(1, 5))) * MIN_PER_DAY + self._office_min()
+                self._obs(enc_id, "hba1c", round(hba1c, 1), start_min + 5, lab_rec)
             if "htn" in self.progs or rng.random() < cl["bp_at_t2d_review_prob"]:
                 self._bp(enc_id, day, start_min + 8)
             measured, threshold = hba1c, cl["hba1c_intensify_threshold"]
@@ -562,7 +577,7 @@ class PatientSimulator:
         self._update_meds(name, day, start_min + dur, measured, threshold)
         prog.first_review_done = True
 
-    def _update_meds(self, name: str, day: int, rec_min: int, measured: float,
+    def _update_meds(self, name: str, day: int, rec_min: int, measured: float | None,
                      threshold: float) -> None:
         rng, cl = self.rng, self.cfg["clinical"]
         prog = self.progs[name]
@@ -580,7 +595,7 @@ class PatientSimulator:
             if rng.random() < cl["med_stop_prob"]:
                 row = self.active_meds.pop(key)
                 row["end_date"], row["end_recorded_at"] = day, rec_min
-        if measured > threshold and rng.random() < cl["intensify_prob"]:
+        if measured is not None and measured > threshold and rng.random() < cl["intensify_prob"]:
             nxt = next((k for k in ladder if k not in self.active_meds), None)
             if nxt is not None:
                 self._start_med(nxt, day, rec_min)

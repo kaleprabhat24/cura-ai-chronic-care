@@ -27,7 +27,7 @@ REQUIRED_KEYS: dict[str, set[str]] = {
     },
     "episodes": {
         "prediction_lead_days", "completion_grace_days", "recording_lag_days",
-        "merge_window_days", "cold_start_history_days",
+        "merge_window_days", "cold_start_history_days", "first_prediction_date",
     },
     "care_process": {
         "invite_lead_days", "prebook_base_logit", "prebook_engagement_weight",
@@ -37,7 +37,7 @@ REQUIRED_KEYS: dict[str, set[str]] = {
         "clinic_rebook_lead_days", "clinic_cancel_prob", "patient_cancel_base_logit",
         "patient_cancel_unstable_weight", "rebook_after_cancel_base_logit",
         "rebook_after_noshow_base_logit", "rebook_engagement_weight", "rebook_delay_mean_days",
-        "re_invite_every_days", "max_re_invites",
+        "re_invite_every_days",
     },
     "attendance": {
         "base_logit", "engagement_weight", "access_weight", "unstable_weight", "long_lead_weight",
@@ -53,7 +53,9 @@ REQUIRED_KEYS: dict[str, set[str]] = {
     },
     "clinical": {
         "hba1c_baseline", "hba1c_trend_per_year", "hba1c_trend_engagement_weight",
-        "hba1c_drug_effect", "hba1c_measure_sd", "hba1c_intensify_threshold", "sbp_baseline",
+        "hba1c_drug_effect", "hba1c_measure_sd", "hba1c_intensify_threshold", "hba1c_not_done_base_logit",
+        "hba1c_not_done_engagement_weight", "hba1c_not_done_unstable_weight", "hba1c_lab_failure_prob",
+        "sbp_baseline",
         "sbp_trend_per_year", "sbp_trend_engagement_weight", "sbp_drug_effect", "sbp_measure_sd",
         "sbp_intensify_threshold", "intensify_prob", "med_stop_prob", "statin_prob_t2d",
         "bp_at_t2d_review_prob", "weight_baseline", "acute_visits_per_year",
@@ -90,6 +92,9 @@ def validate_config(cfg: dict[str, Any]) -> None:
             raise ConfigError(f"population.{probs_key} must sum to 1 (got {total})")
     if cfg["simulation"]["data_cutoff"] <= cfg["simulation"]["start_date"]:
         raise ConfigError("data_cutoff must be after start_date")
+    if not (cfg["simulation"]["start_date"] <= cfg["episodes"]["first_prediction_date"]
+            <= cfg["simulation"]["data_cutoff"]):
+        raise ConfigError("episodes.first_prediction_date must lie within the simulated history")
 
 
 def _check_keys(where: str, actual: set[str], expected: set[str]) -> None:
@@ -105,6 +110,7 @@ def load_config(path: str | Path, overrides: dict[str, Any] | None = None) -> di
     # YAML may parse quoted dates as strings and unquoted ones as dates; normalise to ISO strings.
     for key in ("start_date", "data_cutoff"):
         cfg["simulation"][key] = str(cfg["simulation"][key])
+    cfg["episodes"]["first_prediction_date"] = str(cfg["episodes"]["first_prediction_date"])
     if overrides:
         cfg = _deep_merge(cfg, overrides)
     validate_config(cfg)

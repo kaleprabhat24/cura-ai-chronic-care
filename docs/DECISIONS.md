@@ -53,3 +53,44 @@ clinic-cancelled appointments were rebooked relative to the *cancellation* date.
 produced two reviews < 14 days apart, and the simulator log disagreed with the record-based
 reconstruction (2 of 27k episodes). Rebooking now targets the original slot + 7–21 days. The shared
 test cohort was enlarged to 2,000 patients, and the agreement check also runs on the full dataset.
+
+**ADR-011 — Burn-in period and continuing recall letters (2026-10-15).** Investigating why label
+prevalence fell from 38.4% (2020) to 28.7% (2024) showed a change in *which patients generated
+episodes*, not a change in behaviour. In 2020, 96% of episodes were patients' first episodes. Every
+patient started with a forced baseline review, so disengaged patients were over-represented: mean
+hidden engagement rose from 0.02 to 0.43 by 2024. Within each engagement third, prevalence was
+roughly flat. A second cause made the mix drift indefinitely: recall letters stopped after 8 attempts,
+an absorbing "never contacted again" state. Fix: simulate from 2018-01-01 and treat 2018–2019 as
+burn-in. Burn-in records are kept as history; episodes with t0 before
+`episodes.first_prediction_date` (2020-01-01) are ineligible (`prediction_before_study_period`).
+Recall letters now repeat every 90 days while a review is overdue. Result: prevalence 30.1–30.8% across
+2020–2024. Within the low-engagement third it rises slightly (0.474 → 0.489), consistent with the
+configured negative attendance drift.
+
+**ADR-012 — HbA1c missingness (2026-10-15).** At a diabetes review the HbA1c may not be drawn
+(logit −2.2, more likely with low engagement or instability: missing not at random), or drawn with no
+result (2%). No observation is written, so units, timestamps and encounter provenance of the recorded
+results are unchanged. Intensification is then skipped. Completion of the review is unaffected (the
+encounter still counts). The share of diabetes episodes with an HbA1c in the prior 365 days fell from
+100% to 94.7%.
+
+**ADR-013 — Feature design (2026-10-15).** A declarative spec (`features/spec.py`, fs-1.0;
+`docs/FEATURES.md`) and one builder. The builder joins each source to episodes and filters on
+`recorded_at < t0` before aggregating. Appointment statuses and medicine stops are taken as known at t0.
+Prior follow-up outcomes count only when matured before t0, with completion re-derived from events
+recorded before t0. Smoothing priors are fixed constants, not fitted. Sex and language are not model
+inputs; area deprivation is (it is an observed context variable, and subgroup results are reported).
+Missing values: explicit `__missing` indicators, median imputation inside the LR pipeline, and native
+NaN handling in XGBoost.
+
+**ADR-014 — Evaluation design and model selection (2026-10-15).** 20% of patients are held out for
+the final test (2024). Remaining patients: train 2020–2022, with labels matured before 2023.
+Validation 2023 (labels matured before 2024) is split by patient into a tuning half (C, depth, early
+stopping) and a calibration half (Platt vs isotonic by grouped CV Brier, model comparison, tier
+thresholds). Ranking metrics use raw scores (the worklist order); Brier and calibration use calibrated
+probabilities. *Correction:* the first implementation selected XGBoost on a fixed +0.01 validation
+PR-AUC margin, which deviated from the approved plan. The plan requires a CI that excludes zero. The
+rule now requires the paired patient-level bootstrap 95% CI of XGBoost's validation PR-AUC advantage
+to lie above zero. The observed CI was [−0.0007, +0.0284], so logistic regression was selected. The
+correction was made after the test metrics had been computed for both models. The test set was not
+used by the rule, and LR is also nominally ahead on test (difference CIs include zero).

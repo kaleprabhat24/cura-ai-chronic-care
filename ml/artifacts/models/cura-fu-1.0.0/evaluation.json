@@ -1,0 +1,1431 @@
+{
+  "calibration": {
+    "chosen": {
+      "attendance_heuristic": "platt",
+      "logistic_regression": "platt",
+      "prevalence_baseline": "identity",
+      "xgboost": "platt"
+    },
+    "cv_brier": {
+      "attendance_heuristic": {
+        "isotonic": 0.20155033651426413,
+        "platt": 0.20091335624588763
+      },
+      "logistic_regression": {
+        "isotonic": 0.16420833557381315,
+        "platt": 0.16409741688299645
+      },
+      "xgboost": {
+        "isotonic": 0.16446151118376448,
+        "platt": 0.16381464710376925
+      }
+    }
+  },
+  "example_explanation": {
+    "base_log_odds": -0.9609,
+    "calibrated_probability": 0.8843,
+    "episode_id": "ep_000831_t2d_20230901",
+    "factors": [
+      {
+        "contribution_log_odds": 1.2685,
+        "direction": "raises the model's risk estimate",
+        "feature": "has_open_booking",
+        "label": "Review appointment already booked for this follow-up",
+        "recorded": true,
+        "unit": "yes/no",
+        "value": "no",
+        "value_text": "no"
+      },
+      {
+        "contribution_log_odds": 0.444,
+        "direction": "raises the model's risk estimate",
+        "feature": "hba1c_last",
+        "label": "Latest HbA1c",
+        "recorded": true,
+        "unit": "%",
+        "value": 11.2,
+        "value_text": "11.2 %"
+      },
+      {
+        "contribution_log_odds": 0.2631,
+        "direction": "raises the model's risk estimate",
+        "feature": "prior_ontime_rate_smoothed",
+        "label": "Earlier follow-ups completed on time, smoothed",
+        "recorded": true,
+        "unit": "ratio",
+        "value": 0.47,
+        "value_text": "0.47"
+      },
+      {
+        "contribution_log_odds": 0.2364,
+        "direction": "raises the model's risk estimate",
+        "feature": "recall_letters_12m",
+        "label": "Recall letters sent (12 mo)",
+        "recorded": true,
+        "unit": "count",
+        "value": 6.0,
+        "value_text": "6"
+      },
+      {
+        "contribution_log_odds": 0.2252,
+        "direction": "raises the model's risk estimate",
+        "feature": "consecutive_noshows",
+        "label": "Consecutive most recent missed appointments",
+        "recorded": true,
+        "unit": "count",
+        "value": 1.0,
+        "value_text": "1"
+      },
+      {
+        "contribution_log_odds": -0.1097,
+        "direction": "lowers the model's risk estimate",
+        "feature": "last_prior_followup_late",
+        "label": "Most recent known follow-up was late",
+        "recorded": true,
+        "unit": "yes/no",
+        "value": "yes",
+        "value_text": "yes"
+      }
+    ],
+    "method": "logistic_regression_contributions",
+    "model_log_odds": 2.0402,
+    "model_version": "cura-fu-1.0.0",
+    "note": "Explanations show which recorded data the model relied on for this prediction. They are statistical associations in synthetic data, not causes, and not clinical advice.",
+    "risk_tier": "high",
+    "units": "Contributions are log-odds on the uncalibrated model scale (positive raises, negative lowers the model's risk estimate). They are not percentages of risk probability."
+  },
+  "feature_importance": {
+    "logistic_regression": {
+      "features": [
+        {
+          "feature": "has_open_booking",
+          "label": "Review appointment already booked for this follow-up",
+          "mean_abs_log_odds": 0.6990872164503446
+        },
+        {
+          "feature": "days_since_last_outreach",
+          "label": "Days since last outreach attempt",
+          "mean_abs_log_odds": 0.12985000464242305
+        },
+        {
+          "feature": "prior_ontime_rate_smoothed",
+          "label": "Earlier follow-ups completed on time, smoothed",
+          "mean_abs_log_odds": 0.12841193975946613
+        },
+        {
+          "feature": "prior_episodes_matured",
+          "label": "Earlier follow-ups with a known outcome",
+          "mean_abs_log_odds": 0.11958145447211982
+        },
+        {
+          "feature": "booking_lead_days",
+          "label": "Booking lead time of the open booking",
+          "mean_abs_log_odds": 0.10247119984362951
+        },
+        {
+          "feature": "deprivation_quintile",
+          "label": "Area deprivation quintile (5 = most deprived)",
+          "mean_abs_log_odds": 0.08112769563121768
+        },
+        {
+          "feature": "booking_offset_from_due_days",
+          "label": "Booked slot relative to due date",
+          "mean_abs_log_odds": 0.07925387290825041
+        },
+        {
+          "feature": "hba1c_last",
+          "label": "Latest HbA1c",
+          "mean_abs_log_odds": 0.0785137422792592
+        },
+        {
+          "feature": "prior_appointments_24m",
+          "label": "Review appointments with a known outcome (24 mo)",
+          "mean_abs_log_odds": 0.0622689353479459
+        },
+        {
+          "feature": "programme_is_htn",
+          "label": "Follow-up is a hypertension review",
+          "mean_abs_log_odds": 0.058316294351503734
+        },
+        {
+          "feature": "sbp_count_24m",
+          "label": "Blood pressure readings (24 mo)",
+          "mean_abs_log_odds": 0.05566995836906854
+        },
+        {
+          "feature": "hba1c_count_24m",
+          "label": "HbA1c results (24 mo)",
+          "mean_abs_log_odds": 0.053951608188221624
+        },
+        {
+          "feature": "last_prior_followup_late",
+          "label": "Most recent known follow-up was late",
+          "mean_abs_log_odds": 0.05007340863799766
+        },
+        {
+          "feature": "attendance_rate_24m_smoothed",
+          "label": "Attendance rate, smoothed (24 mo)",
+          "mean_abs_log_odds": 0.0486992709835696
+        },
+        {
+          "feature": "sbp_trend_per_year",
+          "label": "Systolic blood pressure trend",
+          "mean_abs_log_odds": 0.043926286283294834
+        },
+        {
+          "feature": "recall_letters_12m",
+          "label": "Recall letters sent (12 mo)",
+          "mean_abs_log_odds": 0.04144549869354298
+        },
+        {
+          "feature": "outreach_calls_12m",
+          "label": "Outreach phone calls (12 mo)",
+          "mean_abs_log_odds": 0.03409471644496785
+        },
+        {
+          "feature": "hba1c_trend_per_year",
+          "label": "HbA1c trend",
+          "mean_abs_log_odds": 0.03282449838953713
+        },
+        {
+          "feature": "programme_medications",
+          "label": "Active medicines for this condition",
+          "mean_abs_log_odds": 0.028755290154066814
+        },
+        {
+          "feature": "acute_visits_12m",
+          "label": "Unplanned (acute) visits (12 mo)",
+          "mean_abs_log_odds": 0.02768460152160401
+        },
+        {
+          "feature": "days_since_sbp",
+          "label": "Days since latest blood pressure",
+          "mean_abs_log_odds": 0.026265447728346703
+        },
+        {
+          "feature": "medication_starts_12m",
+          "label": "Medicines started (12 mo)",
+          "mean_abs_log_odds": 0.023727631976036816
+        },
+        {
+          "feature": "noshows_24m",
+          "label": "Missed review appointments (24 mo)",
+          "mean_abs_log_odds": 0.021672323973894184
+        },
+        {
+          "feature": "active_medications",
+          "label": "Active recorded medicines",
+          "mean_abs_log_odds": 0.021210245747695894
+        },
+        {
+          "feature": "chronic_conditions",
+          "label": "Chronic programme conditions recorded",
+          "mean_abs_log_odds": 0.020303230687464934
+        },
+        {
+          "feature": "consecutive_noshows",
+          "label": "Consecutive most recent missed appointments",
+          "mean_abs_log_odds": 0.018821863047475483
+        },
+        {
+          "feature": "history_days",
+          "label": "Length of recorded encounter history",
+          "mean_abs_log_odds": 0.016026212732418763
+        },
+        {
+          "feature": "sbp_last",
+          "label": "Latest systolic blood pressure",
+          "mean_abs_log_odds": 0.014348649164873046
+        },
+        {
+          "feature": "patient_cancellations_12m",
+          "label": "Appointments cancelled by the patient (12 mo)",
+          "mean_abs_log_odds": 0.010493476666742
+        },
+        {
+          "feature": "days_since_hba1c",
+          "label": "Days since latest HbA1c",
+          "mean_abs_log_odds": 0.009898684665752482
+        },
+        {
+          "feature": "age_years",
+          "label": "Age at prediction time",
+          "mean_abs_log_odds": 0.007459422788445889
+        },
+        {
+          "feature": "noshows_12m",
+          "label": "Missed review appointments (12 mo)",
+          "mean_abs_log_odds": 0.007376874999991673
+        },
+        {
+          "feature": "outreach_contact_rate_24m_smoothed",
+          "label": "Outreach contact rate, smoothed (24 mo)",
+          "mean_abs_log_odds": 0.004038938764400206
+        },
+        {
+          "feature": "wrong_number_24m",
+          "label": "Wrong phone number recorded (24 mo)",
+          "mean_abs_log_odds": 0.002111751942531409
+        },
+        {
+          "feature": "days_since_last_visit",
+          "label": "Days since last attended visit",
+          "mean_abs_log_odds": 0.00119861680732588
+        },
+        {
+          "feature": "medication_stops_12m",
+          "label": "Medicines stopped (12 mo)",
+          "mean_abs_log_odds": 0.0006592339260089614
+        },
+        {
+          "feature": "outreach_reached_12m",
+          "label": "Outreach calls that reached the patient (12 mo)",
+          "mean_abs_log_odds": 1.530388111029926e-05
+        }
+      ],
+      "method": "logistic_regression_contributions"
+    },
+    "xgboost": {
+      "features": [
+        {
+          "feature": "booking_offset_from_due_days",
+          "label": "Booked slot relative to due date",
+          "mean_abs_log_odds": 0.6232482730345069
+        },
+        {
+          "feature": "booking_lead_days",
+          "label": "Booking lead time of the open booking",
+          "mean_abs_log_odds": 0.16451764614003658
+        },
+        {
+          "feature": "has_open_booking",
+          "label": "Review appointment already booked for this follow-up",
+          "mean_abs_log_odds": 0.12649878711850793
+        },
+        {
+          "feature": "prior_ontime_rate_smoothed",
+          "label": "Earlier follow-ups completed on time, smoothed",
+          "mean_abs_log_odds": 0.12398510708526361
+        },
+        {
+          "feature": "days_since_last_outreach",
+          "label": "Days since last outreach attempt",
+          "mean_abs_log_odds": 0.11098071331688067
+        },
+        {
+          "feature": "hba1c_last",
+          "label": "Latest HbA1c",
+          "mean_abs_log_odds": 0.05625949136222422
+        },
+        {
+          "feature": "deprivation_quintile",
+          "label": "Area deprivation quintile (5 = most deprived)",
+          "mean_abs_log_odds": 0.05483329755420697
+        },
+        {
+          "feature": "attendance_rate_24m_smoothed",
+          "label": "Attendance rate, smoothed (24 mo)",
+          "mean_abs_log_odds": 0.050145748229889126
+        },
+        {
+          "feature": "hba1c_count_24m",
+          "label": "HbA1c results (24 mo)",
+          "mean_abs_log_odds": 0.04461292783217924
+        },
+        {
+          "feature": "hba1c_trend_per_year",
+          "label": "HbA1c trend",
+          "mean_abs_log_odds": 0.0406189343446753
+        },
+        {
+          "feature": "sbp_trend_per_year",
+          "label": "Systolic blood pressure trend",
+          "mean_abs_log_odds": 0.02364668478779351
+        },
+        {
+          "feature": "recall_letters_12m",
+          "label": "Recall letters sent (12 mo)",
+          "mean_abs_log_odds": 0.012607291755398336
+        },
+        {
+          "feature": "prior_episodes_matured",
+          "label": "Earlier follow-ups with a known outcome",
+          "mean_abs_log_odds": 0.008189800507934377
+        },
+        {
+          "feature": "consecutive_noshows",
+          "label": "Consecutive most recent missed appointments",
+          "mean_abs_log_odds": 0.006304605857096373
+        },
+        {
+          "feature": "last_prior_followup_late",
+          "label": "Most recent known follow-up was late",
+          "mean_abs_log_odds": 0.002327415605370516
+        },
+        {
+          "feature": "sbp_count_24m",
+          "label": "Blood pressure readings (24 mo)",
+          "mean_abs_log_odds": 0.0021532237238491595
+        },
+        {
+          "feature": "age_years",
+          "label": "Age at prediction time",
+          "mean_abs_log_odds": 0.0020264546965453245
+        },
+        {
+          "feature": "history_days",
+          "label": "Length of recorded encounter history",
+          "mean_abs_log_odds": 0.001739894218484846
+        },
+        {
+          "feature": "outreach_contact_rate_24m_smoothed",
+          "label": "Outreach contact rate, smoothed (24 mo)",
+          "mean_abs_log_odds": 0.0014025187072646175
+        },
+        {
+          "feature": "noshows_24m",
+          "label": "Missed review appointments (24 mo)",
+          "mean_abs_log_odds": 0.0013608118908586485
+        },
+        {
+          "feature": "days_since_last_visit",
+          "label": "Days since last attended visit",
+          "mean_abs_log_odds": 0.0012110132538860944
+        },
+        {
+          "feature": "days_since_sbp",
+          "label": "Days since latest blood pressure",
+          "mean_abs_log_odds": 0.0010217731251313017
+        },
+        {
+          "feature": "prior_appointments_24m",
+          "label": "Review appointments with a known outcome (24 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "noshows_12m",
+          "label": "Missed review appointments (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "patient_cancellations_12m",
+          "label": "Appointments cancelled by the patient (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "sbp_last",
+          "label": "Latest systolic blood pressure",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "days_since_hba1c",
+          "label": "Days since latest HbA1c",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "acute_visits_12m",
+          "label": "Unplanned (acute) visits (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "programme_medications",
+          "label": "Active medicines for this condition",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "outreach_reached_12m",
+          "label": "Outreach calls that reached the patient (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "outreach_calls_12m",
+          "label": "Outreach phone calls (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "medication_stops_12m",
+          "label": "Medicines stopped (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "medication_starts_12m",
+          "label": "Medicines started (12 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "active_medications",
+          "label": "Active recorded medicines",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "wrong_number_24m",
+          "label": "Wrong phone number recorded (24 mo)",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "chronic_conditions",
+          "label": "Chronic programme conditions recorded",
+          "mean_abs_log_odds": 0.0
+        },
+        {
+          "feature": "programme_is_htn",
+          "label": "Follow-up is a hypertension review",
+          "mean_abs_log_odds": 0.0
+        }
+      ],
+      "method": "tree_shap"
+    }
+  },
+  "feature_missingness": {
+    "test": {
+      "active_medications": 0.0,
+      "acute_visits_12m": 0.0,
+      "age_years": 0.0,
+      "attendance_rate_24m_smoothed": 0.0,
+      "booking_lead_days": 0.25997425997426,
+      "booking_offset_from_due_days": 0.25997425997426,
+      "chronic_conditions": 0.0,
+      "consecutive_noshows": 0.0,
+      "days_since_hba1c": 0.26383526383526384,
+      "days_since_last_outreach": 0.3912483912483912,
+      "days_since_last_visit": 0.0,
+      "days_since_sbp": 0.005148005148005148,
+      "deprivation_quintile": 0.0,
+      "has_open_booking": 0.0,
+      "hba1c_count_24m": 0.0,
+      "hba1c_last": 0.26383526383526384,
+      "hba1c_trend_per_year": 0.4375804375804376,
+      "history_days": 0.0,
+      "last_prior_followup_late": 0.015444015444015444,
+      "medication_starts_12m": 0.0,
+      "medication_stops_12m": 0.0,
+      "noshows_12m": 0.0,
+      "noshows_24m": 0.0,
+      "outreach_calls_12m": 0.0,
+      "outreach_contact_rate_24m_smoothed": 0.0,
+      "outreach_reached_12m": 0.0,
+      "patient_cancellations_12m": 0.0,
+      "prior_appointments_24m": 0.0,
+      "prior_episodes_matured": 0.0,
+      "prior_ontime_rate_smoothed": 0.0,
+      "programme_is_htn": 0.0,
+      "programme_medications": 0.0,
+      "recall_letters_12m": 0.0,
+      "sbp_count_24m": 0.0,
+      "sbp_last": 0.005148005148005148,
+      "sbp_trend_per_year": 0.14543114543114544,
+      "wrong_number_24m": 0.0
+    },
+    "train": {
+      "active_medications": 0.0,
+      "acute_visits_12m": 0.0,
+      "age_years": 0.0,
+      "attendance_rate_24m_smoothed": 0.0,
+      "booking_lead_days": 0.2823380840699982,
+      "booking_offset_from_due_days": 0.2823380840699982,
+      "chronic_conditions": 0.0,
+      "consecutive_noshows": 0.0,
+      "days_since_hba1c": 0.27593360995850624,
+      "days_since_last_outreach": 0.4586866317878405,
+      "days_since_last_visit": 0.0,
+      "days_since_sbp": 0.007035901136568645,
+      "deprivation_quintile": 0.0,
+      "has_open_booking": 0.0,
+      "hba1c_count_24m": 0.0,
+      "hba1c_last": 0.27593360995850624,
+      "hba1c_trend_per_year": 0.4419989175536713,
+      "history_days": 0.0,
+      "last_prior_followup_late": 0.059985567382283965,
+      "medication_starts_12m": 0.0,
+      "medication_stops_12m": 0.0,
+      "noshows_12m": 0.0,
+      "noshows_24m": 0.0,
+      "outreach_calls_12m": 0.0,
+      "outreach_contact_rate_24m_smoothed": 0.0,
+      "outreach_reached_12m": 0.0,
+      "patient_cancellations_12m": 0.0,
+      "prior_appointments_24m": 0.0,
+      "prior_episodes_matured": 0.0,
+      "prior_ontime_rate_smoothed": 0.0,
+      "programme_is_htn": 0.0,
+      "programme_medications": 0.0,
+      "recall_letters_12m": 0.0,
+      "sbp_count_24m": 0.0,
+      "sbp_last": 0.007035901136568645,
+      "sbp_trend_per_year": 0.15370737867580733,
+      "wrong_number_24m": 0.0
+    }
+  },
+  "label_prevalence_over_time": [
+    {
+      "labelled": 4917,
+      "prevalence": 0.3014032946918853,
+      "programme": "all",
+      "year": 2020
+    },
+    {
+      "labelled": 2024,
+      "prevalence": 0.3423913043478261,
+      "programme": "htn",
+      "year": 2020
+    },
+    {
+      "labelled": 2893,
+      "prevalence": 0.2727272727272727,
+      "programme": "t2d",
+      "year": 2020
+    },
+    {
+      "labelled": 4911,
+      "prevalence": 0.3046222765220933,
+      "programme": "all",
+      "year": 2021
+    },
+    {
+      "labelled": 1992,
+      "prevalence": 0.3293172690763052,
+      "programme": "htn",
+      "year": 2021
+    },
+    {
+      "labelled": 2919,
+      "prevalence": 0.28776978417266186,
+      "programme": "t2d",
+      "year": 2021
+    },
+    {
+      "labelled": 4708,
+      "prevalence": 0.3056499575191164,
+      "programme": "all",
+      "year": 2022
+    },
+    {
+      "labelled": 1876,
+      "prevalence": 0.29850746268656714,
+      "programme": "htn",
+      "year": 2022
+    },
+    {
+      "labelled": 2832,
+      "prevalence": 0.3103813559322034,
+      "programme": "t2d",
+      "year": 2022
+    },
+    {
+      "labelled": 4519,
+      "prevalence": 0.30825403850409383,
+      "programme": "all",
+      "year": 2023
+    },
+    {
+      "labelled": 1869,
+      "prevalence": 0.3247726056714821,
+      "programme": "htn",
+      "year": 2023
+    },
+    {
+      "labelled": 2650,
+      "prevalence": 0.29660377358490564,
+      "programme": "t2d",
+      "year": 2023
+    },
+    {
+      "labelled": 3803,
+      "prevalence": 0.3055482513804891,
+      "programme": "all",
+      "year": 2024
+    },
+    {
+      "labelled": 1536,
+      "prevalence": 0.3274739583333333,
+      "programme": "htn",
+      "year": 2024
+    },
+    {
+      "labelled": 2267,
+      "prevalence": 0.2906925452139391,
+      "programme": "t2d",
+      "year": 2024
+    }
+  ],
+  "selected_model": "logistic_regression",
+  "selection": {
+    "rule": "choose XGBoost only if the paired patient-level bootstrap 95% CI of its validation PR-AUC advantage over logistic regression lies entirely above 0.0 and its validation Brier score is not higher by more than 0.0; otherwise keep the simpler logistic regression",
+    "selected": "logistic_regression",
+    "xgboost_minus_lr_val_brier": -0.0001822635455190902,
+    "xgboost_minus_lr_val_pr_auc": 0.013580167933148646,
+    "xgboost_minus_lr_val_pr_auc_ci": [
+      -0.0006589239420341366,
+      0.0283962281844075
+    ]
+  },
+  "shap_consistency": {
+    "max_abs_additivity_error": 1.1186348274350166e-06,
+    "max_abs_diff_shap_vs_xgboost_native": 0.0
+  },
+  "single_feature_auc_train": [
+    [
+      "has_open_booking",
+      0.7207079154434968
+    ],
+    [
+      "prior_ontime_rate_smoothed",
+      0.6070405682333937
+    ],
+    [
+      "attendance_rate_24m_smoothed",
+      0.5877741721540575
+    ],
+    [
+      "hba1c_count_24m",
+      0.5800848781822155
+    ],
+    [
+      "prior_episodes_matured",
+      0.5739220123200774
+    ],
+    [
+      "days_since_last_outreach__missing",
+      0.5690613161485928
+    ],
+    [
+      "sbp_count_24m",
+      0.5664993451806981
+    ],
+    [
+      "hba1c_trend_per_year__missing",
+      0.5600956402940804
+    ],
+    [
+      "prior_appointments_24m",
+      0.55895427191276
+    ],
+    [
+      "recall_letters_12m",
+      0.5559058282738291
+    ]
+  ],
+  "splits": {
+    "test": {
+      "episodes": 777,
+      "patients": 526,
+      "prevalence": 0.2908622908622909
+    },
+    "train": {
+      "episodes": 11086,
+      "patients": 3304,
+      "prevalence": 0.3075951650730651
+    },
+    "val_cal": {
+      "episodes": 1546,
+      "patients": 1074,
+      "prevalence": 0.2846054333764554
+    },
+    "val_tune": {
+      "episodes": 1606,
+      "patients": 1121,
+      "prevalence": 0.3287671232876712
+    }
+  },
+  "subgroups_test": [
+    {
+      "group": "programme",
+      "mean_predicted": 0.2932843047473194,
+      "n": 305,
+      "pr_auc": 0.6568932753171015,
+      "prevalence": 0.3114754098360656,
+      "value": "htn"
+    },
+    {
+      "group": "programme",
+      "mean_predicted": 0.2590082936547847,
+      "n": 472,
+      "pr_auc": 0.6415378396824528,
+      "prevalence": 0.2775423728813559,
+      "value": "t2d"
+    },
+    {
+      "group": "sex",
+      "mean_predicted": 0.2538662273783407,
+      "n": 383,
+      "pr_auc": 0.6128565759094149,
+      "prevalence": 0.2819843342036554,
+      "value": "female"
+    },
+    {
+      "group": "sex",
+      "mean_predicted": 0.290540260068747,
+      "n": 394,
+      "pr_auc": 0.6742585377513113,
+      "prevalence": 0.29949238578680204,
+      "value": "male"
+    },
+    {
+      "group": "deprivation_group",
+      "mean_predicted": 0.2510264167177276,
+      "n": 327,
+      "pr_auc": 0.6338399825201492,
+      "prevalence": 0.2782874617737003,
+      "value": "1-2"
+    },
+    {
+      "group": "deprivation_group",
+      "mean_predicted": 0.2688511284190666,
+      "n": 133,
+      "pr_auc": 0.6707442922446096,
+      "prevalence": 0.2556390977443609,
+      "value": "3"
+    },
+    {
+      "group": "deprivation_group",
+      "mean_predicted": 0.296090817686303,
+      "n": 317,
+      "pr_auc": 0.6562891651697252,
+      "prevalence": 0.3186119873817035,
+      "value": "4-5"
+    }
+  ],
+  "suspicious_features": [],
+  "synthetic_data_only": true,
+  "test": {
+    "bootstrap": {
+      "differences": {
+        "logistic_regression - attendance_heuristic": {
+          "brier": {
+            "interval": [
+              -0.052894654102440104,
+              -0.030153334686929826
+            ],
+            "share_positive": 0.0
+          },
+          "pr_auc": {
+            "interval": [
+              0.18736338267416605,
+              0.30501891675479204
+            ],
+            "share_positive": 1.0
+          },
+          "precision_at_capacity": {
+            "interval": [
+              0.16806722689075632,
+              0.36206896551724144
+            ],
+            "share_positive": 1.0
+          },
+          "roc_auc": {
+            "interval": [
+              0.13783675929505518,
+              0.22844588011079514
+            ],
+            "share_positive": 1.0
+          }
+        },
+        "logistic_regression - prevalence_baseline": {
+          "brier": {
+            "interval": [
+              -0.05892771989455676,
+              -0.036785621932841434
+            ],
+            "share_positive": 0.0
+          },
+          "pr_auc": {
+            "interval": [
+              0.30313459493770034,
+              0.40406355670025507
+            ],
+            "share_positive": 1.0
+          },
+          "precision_at_capacity": {
+            "interval": [
+              0.32622844827586206,
+              0.5435004537205081
+            ],
+            "share_positive": 1.0
+          },
+          "roc_auc": {
+            "interval": [
+              0.25074483917909934,
+              0.32112308127333317
+            ],
+            "share_positive": 1.0
+          }
+        },
+        "xgboost - attendance_heuristic": {
+          "brier": {
+            "interval": [
+              -0.05174656510296634,
+              -0.027605151014044225
+            ],
+            "share_positive": 0.0
+          },
+          "pr_auc": {
+            "interval": [
+              0.17951817072209078,
+              0.2975932265958547
+            ],
+            "share_positive": 1.0
+          },
+          "precision_at_capacity": {
+            "interval": [
+              0.14589412024756854,
+              0.3405041286397218
+            ],
+            "share_positive": 1.0
+          },
+          "roc_auc": {
+            "interval": [
+              0.1290975110956275,
+              0.21779500382801853
+            ],
+            "share_positive": 1.0
+          }
+        },
+        "xgboost - logistic_regression": {
+          "brier": {
+            "interval": [
+              -0.0006290245490365656,
+              0.005089694558666978
+            ],
+            "share_positive": 0.94
+          },
+          "pr_auc": {
+            "interval": [
+              -0.027976069641108967,
+              0.014164068018136319
+            ],
+            "share_positive": 0.28
+          },
+          "precision_at_capacity": {
+            "interval": [
+              -0.06468750000000005,
+              0.01754385964912275
+            ],
+            "share_positive": 0.138
+          },
+          "roc_auc": {
+            "interval": [
+              -0.01766745121144403,
+              0.003328272453828476
+            ],
+            "share_positive": 0.086
+          }
+        }
+      },
+      "models": {
+        "attendance_heuristic": {
+          "brier": [
+            0.18518281932575978,
+            0.21547607647785028
+          ],
+          "pr_auc": [
+            0.3425613370757862,
+            0.4545186627715739
+          ],
+          "precision_at_capacity": [
+            0.3728813559322034,
+            0.5641025641025641
+          ],
+          "recall_at_capacity": [
+            0.19954545454545455,
+            0.285078047325512
+          ],
+          "roc_auc": [
+            0.5665919224971345,
+            0.6524262222283579
+          ]
+        },
+        "logistic_regression": {
+          "brier": [
+            0.143394846140223,
+            0.17478045011653698
+          ],
+          "pr_auc": [
+            0.5877429821432103,
+            0.7024495366795929
+          ],
+          "precision_at_capacity": [
+            0.6410256410256411,
+            0.8077584947022287
+          ],
+          "recall_at_capacity": [
+            0.33626198391835477,
+            0.41686285500747383
+          ],
+          "roc_auc": [
+            0.7507448391790994,
+            0.8211230812733331
+          ]
+        },
+        "prevalence_baseline": {
+          "brier": [
+            0.1936660646869676,
+            0.21965605431093585
+          ],
+          "pr_auc": [
+            0.2574033005674099,
+            0.3249431563975346
+          ],
+          "precision_at_capacity": [
+            0.20689655172413793,
+            0.37556089743589743
+          ],
+          "recall_at_capacity": [
+            0.11239343001538124,
+            0.1915020808995327
+          ],
+          "roc_auc": [
+            0.5,
+            0.5
+          ]
+        },
+        "xgboost": {
+          "brier": [
+            0.14600208187597183,
+            0.17690472518286796
+          ],
+          "pr_auc": [
+            0.5798420233206744,
+            0.6962880371758516
+          ],
+          "precision_at_capacity": [
+            0.6281597019286966,
+            0.7835925787106446
+          ],
+          "recall_at_capacity": [
+            0.324137791668912,
+            0.40865384615384615
+          ],
+          "roc_auc": [
+            0.7441956996860655,
+            0.8163886851561726
+          ]
+        }
+      },
+      "n_resamples_used": 500
+    },
+    "calibration_table": [
+      {
+        "max_predicted": 0.08600326523520471,
+        "mean_predicted": 0.07125396384826098,
+        "min_predicted": 0.04319514156541766,
+        "n": 78,
+        "observed_rate": 0.07692307692307693
+      },
+      {
+        "max_predicted": 0.1131094085345423,
+        "mean_predicted": 0.09903808643883649,
+        "min_predicted": 0.0862563185939003,
+        "n": 78,
+        "observed_rate": 0.10256410256410256
+      },
+      {
+        "max_predicted": 0.1329489332412644,
+        "mean_predicted": 0.124122920162834,
+        "min_predicted": 0.11319163088074205,
+        "n": 78,
+        "observed_rate": 0.0641025641025641
+      },
+      {
+        "max_predicted": 0.15583939664502192,
+        "mean_predicted": 0.144281194524526,
+        "min_predicted": 0.1332788095523532,
+        "n": 78,
+        "observed_rate": 0.10256410256410256
+      },
+      {
+        "max_predicted": 0.18810666388505284,
+        "mean_predicted": 0.1711033788486226,
+        "min_predicted": 0.15591045688029687,
+        "n": 78,
+        "observed_rate": 0.23076923076923078
+      },
+      {
+        "max_predicted": 0.2292940032373111,
+        "mean_predicted": 0.2066550049142399,
+        "min_predicted": 0.18867483705592566,
+        "n": 78,
+        "observed_rate": 0.2692307692307692
+      },
+      {
+        "max_predicted": 0.31159650331699823,
+        "mean_predicted": 0.26750219802138514,
+        "min_predicted": 0.22969561697159604,
+        "n": 78,
+        "observed_rate": 0.32051282051282054
+      },
+      {
+        "max_predicted": 0.49123444818916145,
+        "mean_predicted": 0.39213926692964485,
+        "min_predicted": 0.3135880070484503,
+        "n": 77,
+        "observed_rate": 0.44155844155844154
+      },
+      {
+        "max_predicted": 0.6211208905637725,
+        "mean_predicted": 0.5539890895251292,
+        "min_predicted": 0.49139700875524256,
+        "n": 77,
+        "observed_rate": 0.5064935064935064
+      },
+      {
+        "max_predicted": 0.8842650839074804,
+        "mean_predicted": 0.7052352968674571,
+        "min_predicted": 0.6215606428777976,
+        "n": 77,
+        "observed_rate": 0.8051948051948052
+      }
+    ],
+    "point": {
+      "attendance_heuristic": {
+        "brier": 0.2006371465018501,
+        "calibration_in_the_large": 0.007446352919695642,
+        "calibration_intercept": 0.31040734630071465,
+        "calibration_slope": 1.300577706988031,
+        "capacity": {
+          "0.10": {
+            "k": 78,
+            "lift": 1.674948944860449,
+            "precision": 0.48717948717948717,
+            "recall": 0.168141592920354
+          },
+          "0.15": {
+            "k": 117,
+            "lift": 1.6455638756523712,
+            "precision": 0.47863247863247865,
+            "recall": 0.24778761061946902
+          },
+          "0.20": {
+            "k": 156,
+            "lift": 1.4104833219877466,
+            "precision": 0.41025641025641024,
+            "recall": 0.2831858407079646
+          }
+        },
+        "ece": 0.06379800687519399,
+        "mean_predicted": 0.28341593794259523,
+        "n": 777,
+        "observed_rate": 0.2908622908622909,
+        "positives": 226,
+        "pr_auc": 0.398201898472195,
+        "prevalence": 0.2908622908622909,
+        "roc_auc": 0.6108764434736521
+      },
+      "logistic_regression": {
+        "brier": 0.1583586902134518,
+        "calibration_in_the_large": 0.018399449738750517,
+        "calibration_intercept": 0.1927634608298862,
+        "calibration_slope": 1.0882431518712576,
+        "capacity": {
+          "0.10": {
+            "k": 78,
+            "lift": 2.732811436351259,
+            "precision": 0.7948717948717948,
+            "recall": 0.2743362831858407
+          },
+          "0.15": {
+            "k": 117,
+            "lift": 2.527115951894713,
+            "precision": 0.7350427350427351,
+            "recall": 0.3805309734513274
+          },
+          "0.20": {
+            "k": 156,
+            "lift": 2.2259189925119127,
+            "precision": 0.6474358974358975,
+            "recall": 0.4469026548672566
+          }
+        },
+        "ece": 0.048763038226697676,
+        "mean_predicted": 0.27246284112354036,
+        "n": 777,
+        "observed_rate": 0.2908622908622909,
+        "positives": 226,
+        "pr_auc": 0.647357614202202,
+        "prevalence": 0.2908622908622909,
+        "roc_auc": 0.7906782519313236
+      },
+      "prevalence_baseline": {
+        "brier": 0.20654140769598459,
+        "calibration_in_the_large": -0.016732874210774185,
+        "calibration_intercept": NaN,
+        "calibration_slope": NaN,
+        "capacity": {
+          "0.10": {
+            "k": 78,
+            "lift": 1.0578624914908101,
+            "precision": 0.3076923076923077,
+            "recall": 0.10619469026548672
+          },
+          "0.15": {
+            "k": 117,
+            "lift": 0.999092353074654,
+            "precision": 0.2905982905982906,
+            "recall": 0.1504424778761062
+          },
+          "0.20": {
+            "k": 156,
+            "lift": 1.1239788972089857,
+            "precision": 0.3269230769230769,
+            "recall": 0.22566371681415928
+          }
+        },
+        "ece": 0.016732874210774185,
+        "mean_predicted": 0.30759516507306506,
+        "n": 777,
+        "observed_rate": 0.2908622908622909,
+        "positives": 226,
+        "pr_auc": 0.2908622908622909,
+        "prevalence": 0.2908622908622909,
+        "roc_auc": 0.5
+      },
+      "xgboost": {
+        "brier": 0.16047602835177396,
+        "calibration_in_the_large": 0.009687809947221293,
+        "calibration_intercept": 0.10952437669038773,
+        "calibration_slope": 1.0601317882537842,
+        "capacity": {
+          "0.10": {
+            "k": 78,
+            "lift": 2.600578624914908,
+            "precision": 0.7564102564102564,
+            "recall": 0.2610619469026549
+          },
+          "0.15": {
+            "k": 117,
+            "lift": 2.4683458134785567,
+            "precision": 0.717948717948718,
+            "recall": 0.37168141592920356
+          },
+          "0.20": {
+            "k": 156,
+            "lift": 2.3361130020422056,
+            "precision": 0.6794871794871795,
+            "recall": 0.4690265486725664
+          }
+        },
+        "ece": 0.04844602549321555,
+        "mean_predicted": 0.2811744809150696,
+        "n": 777,
+        "observed_rate": 0.2908622908622909,
+        "positives": 226,
+        "pr_auc": 0.6423150231348497,
+        "prevalence": 0.2908622908622909,
+        "roc_auc": 0.7832661452226845
+      }
+    },
+    "tiers": [
+      {
+        "n": 104,
+        "observed_incomplete_rate": 0.7307692307692307,
+        "share": 0.13384813384813385,
+        "tier": "high"
+      },
+      {
+        "n": 188,
+        "observed_incomplete_rate": 0.4148936170212766,
+        "share": 0.24195624195624196,
+        "tier": "medium"
+      },
+      {
+        "n": 485,
+        "observed_incomplete_rate": 0.14845360824742268,
+        "share": 0.6241956241956242,
+        "tier": "low"
+      }
+    ]
+  },
+  "test_patients_overlapping_training_or_validation": 0,
+  "tier_thresholds": {
+    "high": 0.5694604719166545,
+    "medium": 0.24070528315497175
+  },
+  "tuning": {
+    "logistic_regression": [
+      {
+        "C": 0.003,
+        "val_tune_pr_auc": 0.6535610233654572
+      },
+      {
+        "C": 0.01,
+        "val_tune_pr_auc": 0.6533297118812076
+      },
+      {
+        "C": 0.03,
+        "val_tune_pr_auc": 0.6526892338137628
+      },
+      {
+        "C": 0.1,
+        "val_tune_pr_auc": 0.6526428359069558
+      },
+      {
+        "C": 0.3,
+        "val_tune_pr_auc": 0.6527780197630382
+      },
+      {
+        "C": 1.0,
+        "val_tune_pr_auc": 0.6527762438103532
+      }
+    ],
+    "logistic_regression_best_C": 0.003,
+    "xgboost": [
+      {
+        "max_depth": 2,
+        "n_estimators": 85,
+        "val_tune_pr_auc": 0.6520531445827997
+      },
+      {
+        "max_depth": 3,
+        "n_estimators": 107,
+        "val_tune_pr_auc": 0.6493197475120338
+      },
+      {
+        "max_depth": 4,
+        "n_estimators": 50,
+        "val_tune_pr_auc": 0.6446454256125693
+      }
+    ],
+    "xgboost_best": {
+      "max_depth": 2,
+      "n_estimators": 85,
+      "val_tune_pr_auc": 0.6520531445827997
+    }
+  },
+  "validation": {
+    "attendance_heuristic": {
+      "brier": 0.20046127950264783,
+      "calibration_in_the_large": -5.0804611735566496e-05,
+      "calibration_intercept": -8.193938591611119e-05,
+      "calibration_slope": 1.000191025977105,
+      "capacity": {
+        "0.10": {
+          "k": 155,
+          "lift": 1.360117302052786,
+          "precision": 0.3870967741935484,
+          "recall": 0.13636363636363635
+        },
+        "0.15": {
+          "k": 232,
+          "lift": 1.3327586206896551,
+          "precision": 0.3793103448275862,
+          "recall": 0.2
+        },
+        "0.20": {
+          "k": 310,
+          "lift": 1.2467741935483871,
+          "precision": 0.3548387096774194,
+          "recall": 0.25
+        }
+      },
+      "ece": 0.026272940601497485,
+      "mean_predicted": 0.28465623798819095,
+      "n": 1546,
+      "observed_rate": 0.2846054333764554,
+      "positives": 440,
+      "pr_auc": 0.34430197647595884,
+      "prevalence": 0.2846054333764554,
+      "roc_auc": 0.5834107348347854
+    },
+    "logistic_regression": {
+      "brier": 0.16347287943898448,
+      "calibration_in_the_large": -1.1873496982284237e-05,
+      "calibration_intercept": -0.00014465844649830554,
+      "calibration_slope": 0.9999582646538282,
+      "capacity": {
+        "0.10": {
+          "k": 155,
+          "lift": 2.312199413489736,
+          "precision": 0.6580645161290323,
+          "recall": 0.2318181818181818
+        },
+        "0.15": {
+          "k": 232,
+          "lift": 2.2263126959247646,
+          "precision": 0.6336206896551724,
+          "recall": 0.3340909090909091
+        },
+        "0.20": {
+          "k": 310,
+          "lift": 2.130850439882698,
+          "precision": 0.6064516129032258,
+          "recall": 0.42727272727272725
+        }
+      },
+      "ece": 0.04094484796037223,
+      "mean_predicted": 0.28461730687343767,
+      "n": 1546,
+      "observed_rate": 0.2846054333764554,
+      "positives": 440,
+      "pr_auc": 0.5564376551584509,
+      "prevalence": 0.2846054333764554,
+      "roc_auc": 0.7779898898569785
+    },
+    "prevalence_baseline": {
+      "brier": 0.2041337084325375,
+      "calibration_in_the_large": -0.022989731696609728,
+      "calibration_intercept": NaN,
+      "calibration_slope": NaN,
+      "capacity": {
+        "0.10": {
+          "k": 155,
+          "lift": 1.0200879765395894,
+          "precision": 0.2903225806451613,
+          "recall": 0.10227272727272728
+        },
+        "0.15": {
+          "k": 232,
+          "lift": 1.0904388714733542,
+          "precision": 0.3103448275862069,
+          "recall": 0.16363636363636364
+        },
+        "0.20": {
+          "k": 310,
+          "lift": 1.0994281524926686,
+          "precision": 0.31290322580645163,
+          "recall": 0.22045454545454546
+        }
+      },
+      "ece": 0.022989731696609728,
+      "mean_predicted": 0.3075951650730651,
+      "n": 1546,
+      "observed_rate": 0.2846054333764554,
+      "positives": 440,
+      "pr_auc": 0.2846054333764554,
+      "prevalence": 0.2846054333764554,
+      "roc_auc": 0.5
+    },
+    "xgboost": {
+      "brier": 0.16329061589346539,
+      "calibration_in_the_large": -9.75546059600596e-06,
+      "calibration_intercept": -0.00012179071927675977,
+      "calibration_slope": 0.999954879283905,
+      "capacity": {
+        "0.10": {
+          "k": 155,
+          "lift": 2.334868035190616,
+          "precision": 0.6645161290322581,
+          "recall": 0.2340909090909091
+        },
+        "0.15": {
+          "k": 232,
+          "lift": 2.271747648902821,
+          "precision": 0.646551724137931,
+          "recall": 0.3409090909090909
+        },
+        "0.20": {
+          "k": 310,
+          "lift": 2.1648533724340173,
+          "precision": 0.6161290322580645,
+          "recall": 0.4340909090909091
+        }
+      },
+      "ece": 0.025256658948832625,
+      "mean_predicted": 0.2846151888370514,
+      "n": 1546,
+      "observed_rate": 0.2846054333764554,
+      "positives": 440,
+      "pr_auc": 0.5700178230915995,
+      "prevalence": 0.2846054333764554,
+      "roc_auc": 0.7774186256781194
+    }
+  }
+}

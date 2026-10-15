@@ -33,6 +33,7 @@ LABEL_COLUMNS = [
 ]
 # Checked in this order; the first matching reason is reported.
 INELIGIBLE_REASONS = (
+    "prediction_before_study_period",
     "prediction_after_cutoff",
     "deceased_before_prediction",
     "transferred_before_prediction",
@@ -57,7 +58,8 @@ def _dates(ts: pd.Series) -> pd.Series:
 
 def qualifying_events(records: Records, cfg: dict[str, Any], known_before: pd.Timestamp) -> pd.DataFrame:
     """Events that count as completing a programme review, restricted to those recorded before
-    `known_before`. Rank breaks timestamp ties: encounter < appointment < observation."""
+    `known_before`. Rank breaks timestamp ties: encounter < appointment < observation.
+    `recorded_at` is kept so that feature code can apply its own, per-episode cut-off."""
     enc = records.encounters
     enc = enc[(enc["status"] == "finished") & (as_utc(enc["recorded_at"]) < known_before)]
     ap = records.appointments
@@ -69,21 +71,23 @@ def qualifying_events(records: Records, cfg: dict[str, Any], known_before: pd.Ti
         e = enc[enc["encounter_type"] == p["encounter_type"]]
         a = ap[ap["appointment_type"] == p["encounter_type"]]
         o = obs[obs["code"].isin(p["completion_observation_codes"])]
-        for df, time_col, ref_col, kind, rank in (
-            (e, "start_at", "encounter_id", "encounter", 0),
-            (a, "scheduled_for", "appointment_id", "appointment", 1),
-            (o, "effective_at", "observation_id", "observation", 2),
+        for df, time_col, rec_col, ref_col, kind, rank in (
+            (e, "start_at", "recorded_at", "encounter_id", "encounter", 0),
+            (a, "scheduled_for", "status_recorded_at", "appointment_id", "appointment", 1),
+            (o, "effective_at", "recorded_at", "observation_id", "observation", 2),
         ):
             parts.append(pd.DataFrame({
                 "patient_id": df["patient_id"].astype(str).to_numpy(),
                 "programme": name,
                 "effective_at": as_utc(df[time_col]).to_numpy(),
+                "recorded_at": as_utc(df[rec_col]).to_numpy(),
                 "event_type": kind,
                 "event_ref": df[ref_col].astype(str).to_numpy(),
                 "rank": rank,
             }))
     q = pd.concat(parts, ignore_index=True)
     q["effective_at"] = as_utc(q["effective_at"])
+    q["recorded_at"] = as_utc(q["recorded_at"])
     return q.sort_values(["patient_id", "programme", "effective_at", "rank", "event_ref"],
                          ignore_index=True)
 
@@ -164,7 +168,9 @@ def build_episodes(records: Records, cfg: dict[str, Any]) -> tuple[pd.DataFrame,
     ep = ep.merge(exits, on="patient_id", how="left")
 
     t0 = ep["prediction_at"]
+    first_prediction = pd.Timestamp(ecfg["first_prediction_date"], tz="UTC").as_unit("ns")
     conditions = [
+        t0 < first_prediction,
         t0 > cutoff,
         ep["death_ts"].notna() & (ep["death_ts"] <= t0),
         ep["transfer_ts"].notna() & (ep["transfer_ts"] <= t0),

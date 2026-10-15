@@ -9,7 +9,7 @@ dataset_version: v1
 seed: 20251015
 
 simulation:
-  start_date: "2020-01-01"      # first day of event history
+  start_date: "2018-01-01"      # first day of event history (2018-2019 = burn-in, history only)
   data_cutoff: "2024-12-31"     # simulated "today": the dataset is everything recorded by end of this day
   n_patients: 5000
 
@@ -50,6 +50,7 @@ episodes:
   recording_lag_days: 7           # extra days before an outcome is considered mature
   merge_window_days: 14           # qualifying events within 14 days of an index belong to the same review
   cold_start_history_days: 180    # flag episodes with < 180 days of encounter history at t0
+  first_prediction_date: "2020-01-01"   # episodes with t0 before this are burn-in (history only)
 
 care_process:
   invite_lead_days: 28                 # routine recall invitation sent 28 days before due date
@@ -71,8 +72,7 @@ care_process:
   rebook_after_noshow_base_logit: -0.5
   rebook_engagement_weight: 0.7
   rebook_delay_mean_days: 14
-  re_invite_every_days: 90             # recall letters while a review stays overdue
-  max_re_invites: 8
+  re_invite_every_days: 90             # recall letters repeat while a review stays overdue
 
 attendance:
   base_logit: 2.0
@@ -107,6 +107,10 @@ clinical:
   hba1c_drug_effect: -0.6
   hba1c_measure_sd: 0.25
   hba1c_intensify_threshold: 8.0
+  hba1c_not_done_base_logit: -2.2      # HbA1c not drawn at a diabetes review (~10% on average)
+  hba1c_not_done_engagement_weight: 0.5
+  hba1c_not_done_unstable_weight: 0.8
+  hba1c_lab_failure_prob: 0.02         # drawn but no result (e.g. rejected sample)
   sbp_baseline: [146, 14]              # mean, sd (mm[Hg])
   sbp_trend_per_year: 1.0
   sbp_trend_engagement_weight: 0.8

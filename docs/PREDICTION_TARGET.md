@@ -41,6 +41,7 @@ For an episode with index event at time *I*:
 
 | # | `ineligible_reason` | Rule |
 |---|---|---|
+| 0 | `prediction_before_study_period` | t0 before `episodes.first_prediction_date` (2020-01-01). The simulated history starts on 2018-01-01; 2018–2019 is burn-in, used only as history (ADR-011) |
 | 1 | `prediction_after_cutoff` | t0 is after the data cutoff day |
 | 2 | `deceased_before_prediction` | known death date ≤ t0 date |
 | 3 | `transferred_before_prediction` | known transfer-out date ≤ t0 date |

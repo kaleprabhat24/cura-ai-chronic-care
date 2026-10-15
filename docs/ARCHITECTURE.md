@@ -30,7 +30,7 @@ Detailed specs: [PREDICTION_TARGET.md](PREDICTION_TARGET.md) ·
 ## 2. Stack and layout
 See ADR-001. Repository layout:
 ```
-ml/        cura_ml package: synth/, cohort/, (M2) features/, (M3) modeling/, configs/, tests/, data/, reports/
+ml/        cura_ml package: synth/, cohort/, features/, modeling/, configs/, tests/, data/, reports/, artifacts/
 backend/   (M4+) FastAPI app, Alembic, scripts, tests
 frontend/  (M6+) Next.js app
 docs/      architecture, decisions, data dictionary, prediction target
@@ -56,7 +56,7 @@ anything else. Safeguards, each backed by a test:
 - preprocessing fitted inside the training pipeline;
 - a single-feature leak alarm.
 
-## 6. Modelling (M3)
+## 6. Modelling (M3) — see ADR-014 for the implemented details
 **Splits:** a 20% patient holdout, plus a temporal split (train/validation/test by t0 year).
 **Baselines:** prevalence and a no-show heuristic. **Models:** Logistic Regression vs XGBoost, with
 calibration chosen on the validation year.
@@ -98,9 +98,9 @@ App shell with a permanent "synthetic data" banner. Screens:
 | M | Scope | Depends on | Status |
 |---|---|---|---|
 | M1 | Repo, prediction target, synthetic generator, episodes and labels, manifest, report | – | **done** |
-| M2 | Feature spec + as_of-safe builder + leakage tests | M1 | next |
-| M3 | Baselines, LR, XGBoost, calibration, evaluation, explanations, model bundle | M2 | |
-| M4 | Postgres schema, loader, batch scoring | M3 | |
+| M2 | Feature spec + as_of-safe builder + leakage tests | M1 | **done** |
+| M3 | Baselines, LR, XGBoost, calibration, evaluation, explanations, model bundle | M2 | **done** (selected: LR, `cura-fu-1.0.0`) |
+| M4 | Postgres schema, loader, batch scoring | M3 | next |
 | M5 | Read API with dev auth stub | M4 | |
 | M6 | Frontend shell, Worklist, Patient 360 | M5 | |
 | M7 | Outreach workflow + Outcomes | M6 | |

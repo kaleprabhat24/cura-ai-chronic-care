@@ -1,0 +1,341 @@
+{
+  "calibrated_on": {
+    "episodes": 1546,
+    "split": "val_cal"
+  },
+  "calibration_method": "platt",
+  "cohort_config": {
+    "attendance": {
+      "access_weight": 0.6,
+      "base_logit": 2.0,
+      "engagement_weight": 0.9,
+      "long_lead_cap_days": 120,
+      "long_lead_weight": 0.25,
+      "noise_sd": 0.3,
+      "recent_noshow_weight": 0.4,
+      "unstable_weight": 1.2,
+      "weekday_effects": {
+        "fri": -0.15,
+        "mon": -0.1
+      },
+      "year_drift": -0.06
+    },
+    "care_process": {
+      "booking_delay_mean_days": 10,
+      "booking_lead_days": [
+        5,
+        35
+      ],
+      "clinic_cancel_prob": 0.04,
+      "clinic_rebook_lead_days": [
+        7,
+        21
+      ],
+      "invite_lead_days": 28,
+      "invite_response_access_weight": 0.5,
+      "invite_response_base_logit": 1.0,
+      "invite_response_engagement_weight": 0.8,
+      "invite_response_unstable_weight": 1.0,
+      "outreach_booking_lead_days": [
+        3,
+        21
+      ],
+      "patient_cancel_base_logit": -3.2,
+      "patient_cancel_unstable_weight": 1.0,
+      "prebook_base_logit": -0.6,
+      "prebook_engagement_weight": 0.5,
+      "prebook_offset_days": [
+        -14,
+        7
+      ],
+      "re_invite_every_days": 90,
+      "rebook_after_cancel_base_logit": 0.5,
+      "rebook_after_noshow_base_logit": -0.5,
+      "rebook_delay_mean_days": 14,
+      "rebook_engagement_weight": 0.7
+    },
+    "checks": {
+      "label_prevalence_band": [
+        0.15,
+        0.35
+      ]
+    },
+    "clinical": {
+      "acute_bp_prob": 0.6,
+      "acute_unstable_multiplier": 2.0,
+      "acute_visits_per_year": 0.8,
+      "acute_weight_prob": 0.3,
+      "bp_at_t2d_review_prob": 0.7,
+      "hba1c_baseline": [
+        7.6,
+        1.1
+      ],
+      "hba1c_drug_effect": -0.6,
+      "hba1c_intensify_threshold": 8.0,
+      "hba1c_lab_failure_prob": 0.02,
+      "hba1c_measure_sd": 0.25,
+      "hba1c_not_done_base_logit": -2.2,
+      "hba1c_not_done_engagement_weight": 0.5,
+      "hba1c_not_done_unstable_weight": 0.8,
+      "hba1c_trend_engagement_weight": 0.12,
+      "hba1c_trend_per_year": 0.15,
+      "intensify_prob": 0.6,
+      "med_stop_prob": 0.02,
+      "sbp_baseline": [
+        146,
+        14
+      ],
+      "sbp_drug_effect": -7.0,
+      "sbp_intensify_threshold": 150,
+      "sbp_measure_sd": 8.0,
+      "sbp_trend_engagement_weight": 0.8,
+      "sbp_trend_per_year": 1.0,
+      "statin_prob_t2d": 0.6,
+      "weight_baseline": [
+        86,
+        16
+      ]
+    },
+    "dataset_version": "v1",
+    "episodes": {
+      "cold_start_history_days": 180,
+      "completion_grace_days": 30,
+      "first_prediction_date": "2020-01-01",
+      "merge_window_days": 14,
+      "prediction_lead_days": 14,
+      "recording_lag_days": 7
+    },
+    "outreach_policy": {
+      "book_when_reached_base_logit": 0.6,
+      "book_when_reached_engagement_weight": 0.7,
+      "chase_offsets_days": [
+        7,
+        30
+      ],
+      "chase_probs": [
+        0.6,
+        0.4
+      ],
+      "letter_response_base_logit": -1.2,
+      "letter_response_engagement_weight": 0.6,
+      "pre_due_reminder_lookback_days": 365,
+      "pre_due_reminder_offset_days": -21,
+      "pre_due_reminder_prob": 0.4,
+      "reach_base_logit": 0.0,
+      "reach_trust_weight": 0.8,
+      "reach_unstable_weight": 0.8
+    },
+    "population": {
+      "age_max": 88,
+      "age_min": 35,
+      "annual_death_hazard_at_60": 0.004,
+      "annual_transfer_out_rate": 0.025,
+      "death_hazard_age_slope": 0.07,
+      "incident_condition_prob": 0.12,
+      "language_probs": {
+        "en": 0.86,
+        "es": 0.05,
+        "pa": 0.03,
+        "pl": 0.03,
+        "ur": 0.03
+      },
+      "late_join_max_days": 1095,
+      "programme_mix": {
+        "both": 0.3,
+        "htn_only": 0.4,
+        "t2d_only": 0.3
+      },
+      "registered_before_start_prob": 0.85,
+      "sex_probs": {
+        "female": 0.5,
+        "male": 0.5
+      }
+    },
+    "programmes": {
+      "htn": {
+        "completion_observation_codes": [],
+        "condition_code": "38341003",
+        "encounter_type": "review_htn",
+        "interval_days": 365
+      },
+      "t2d": {
+        "completion_observation_codes": [
+          "4548-4"
+        ],
+        "condition_code": "44054006",
+        "encounter_type": "review_t2d",
+        "interval_days": 182
+      }
+    },
+    "seed": 20251015,
+    "simulation": {
+      "data_cutoff": "2024-12-31",
+      "n_patients": 5000,
+      "start_date": "2018-01-01"
+    },
+    "traits": {
+      "access_deprivation_effect": 0.25,
+      "instability_entry_prob_range": [
+        0.005,
+        0.06
+      ],
+      "instability_exit_prob": 0.3,
+      "trust_engagement_corr": 0.5
+    }
+  },
+  "cohort_config_sha256": "eed3baf932530a27750fd10cd5fd8a610df368aa26b1aa1ebcb069e089df2771",
+  "cura_ml_version": "0.1.0",
+  "data_dir": "ml/data/v1",
+  "data_fingerprint": "b34327852b0270f6ed5f04b7ad502a91a832c393cf326ecbd73e2c32124332b1",
+  "explanation_method": "logistic_regression_contributions",
+  "feature_columns": [
+    "prior_appointments_24m",
+    "noshows_12m",
+    "noshows_24m",
+    "attendance_rate_24m_smoothed",
+    "consecutive_noshows",
+    "patient_cancellations_12m",
+    "days_since_last_visit",
+    "days_since_last_visit__missing",
+    "acute_visits_12m",
+    "has_open_booking",
+    "booking_lead_days",
+    "booking_offset_from_due_days",
+    "prior_episodes_matured",
+    "prior_ontime_rate_smoothed",
+    "last_prior_followup_late",
+    "last_prior_followup_late__missing",
+    "hba1c_last",
+    "hba1c_last__missing",
+    "days_since_hba1c",
+    "hba1c_count_24m",
+    "hba1c_trend_per_year",
+    "hba1c_trend_per_year__missing",
+    "sbp_last",
+    "sbp_last__missing",
+    "days_since_sbp",
+    "sbp_count_24m",
+    "sbp_trend_per_year",
+    "sbp_trend_per_year__missing",
+    "active_medications",
+    "programme_medications",
+    "medication_starts_12m",
+    "medication_stops_12m",
+    "outreach_calls_12m",
+    "outreach_reached_12m",
+    "outreach_contact_rate_24m_smoothed",
+    "recall_letters_12m",
+    "wrong_number_24m",
+    "days_since_last_outreach",
+    "days_since_last_outreach__missing",
+    "history_days",
+    "age_years",
+    "chronic_conditions",
+    "programme_is_htn",
+    "deprivation_quintile"
+  ],
+  "feature_spec_version": "fs-1.0",
+  "features_content_sha256": "a05ab6d32a3969ee6c951e6ec2a4e8c151c2b0634b243c3dfe61d293b32afdf4",
+  "hyperparameters": {
+    "C": 0.003
+  },
+  "library_versions": {
+    "joblib": "1.6.0",
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "python": "3.13.9",
+    "scikit-learn": "1.9.1",
+    "shap": "0.53.0",
+    "xgboost": "3.4.1"
+  },
+  "model_type": "logistic_regression",
+  "model_version": "cura-fu-1.0.0",
+  "prediction_target": "follow-up still incomplete 30 days after the due date, predicted 14 days before the due date",
+  "risk_tier_fractions": {
+    "high_fraction": 0.15,
+    "medium_fraction": 0.25
+  },
+  "synthetic_data_only": true,
+  "tier_thresholds": {
+    "high": 0.5694604719166545,
+    "medium": 0.24070528315497175
+  },
+  "trained_on": {
+    "episodes": 11086,
+    "split": "train",
+    "years": [
+      2020,
+      2021,
+      2022
+    ]
+  },
+  "training_config": {
+    "calibration": {
+      "cv_folds": 5,
+      "methods": [
+        "platt",
+        "isotonic"
+      ]
+    },
+    "capacity": {
+      "primary_fraction": 0.15,
+      "report_fractions": [
+        0.1,
+        0.15,
+        0.2
+      ]
+    },
+    "evaluation": {
+      "bootstrap_resamples": 500,
+      "calibration_bins": 10,
+      "suspicious_single_feature_auc": 0.9
+    },
+    "logistic_regression": {
+      "C_grid": [
+        0.003,
+        0.01,
+        0.03,
+        0.1,
+        0.3,
+        1.0
+      ]
+    },
+    "model_version": "cura-fu-1.0.0",
+    "seed": 20251016,
+    "selection": {
+      "max_brier_increase_for_xgboost": 0.0,
+      "xgboost_pr_auc_ci_lower_bound_above": 0.0
+    },
+    "splits": {
+      "holdout_patient_fraction": 0.2,
+      "test_year": 2024,
+      "train_years": [
+        2020,
+        2021,
+        2022
+      ],
+      "validation_calibration_fraction": 0.5,
+      "validation_year": 2023
+    },
+    "tiers": {
+      "high_fraction": 0.15,
+      "medium_fraction": 0.25
+    },
+    "xgboost": {
+      "colsample_bytree": 0.8,
+      "early_stopping_rounds": 50,
+      "learning_rate": 0.05,
+      "max_depth_grid": [
+        2,
+        3,
+        4
+      ],
+      "min_child_weight": 5,
+      "n_estimators_max": 1000,
+      "n_jobs": 4,
+      "reg_lambda": 1.0,
+      "subsample": 0.8
+    }
+  },
+  "training_config_sha256": "9115f03d9bb6708f87e5c11480cf8177f2926806b47e528932a77f0f10fd3d41"
+}

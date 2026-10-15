@@ -4,8 +4,15 @@
 > follow-up will still be incomplete 30 days after its due date. It does not predict disease
 > deterioration and makes no diagnosis.
 
-Status: **Milestone 1 complete**. This covers the synthetic cohort generator, follow-up episodes and
-labels, the dataset manifest and the cohort report. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Status: **Milestones 1–3 complete**. This covers:
+- the synthetic cohort, with follow-up episodes and labels;
+- leakage-safe longitudinal features;
+- baseline, logistic-regression and XGBoost models with calibration, evaluation and per-prediction
+  explanations;
+- an inference-ready model bundle.
+
+All results are a synthetic-data evaluation, not clinical validation; see the
+[model report](ml/reports/model_cura-fu-1.0.0.md). See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 for the full plan.
 
 ## Quick start (Windows)
@@ -31,15 +38,28 @@ python -m venv .venv
 .venv\Scripts\cura-ml all
 ```
 
+Then build features, train, and use the saved model:
+```
+.venv\Scripts\cura-ml features
+.venv\Scripts\cura-ml train
+.venv\Scripts\cura-ml evaluate
+.venv\Scripts\cura-ml predict --limit 1
+```
+
 `cura-ml all` writes `ml/data/v1/` (git-ignored Parquet files and `manifest.json`) and
-`ml/reports/cohort_v1_summary.md`. Other commands: `generate`, `build-episodes`, `report`
-(each takes `--config` and `--out`).
+`ml/reports/cohort_v1_summary.md`. `cura-ml train` writes the model bundle to
+`ml/artifacts/models/cura-fu-1.0.0/` and the report to `ml/reports/model_cura-fu-1.0.0.md`.
+`predict --episode-id <id>` scores a specific eligible episode.
 
 ## Repository
 ```
-ml/configs/cohort_v1.yaml    all simulation and episode parameters (seeded)
+ml/configs/cohort_v1.yaml    simulation and episode parameters (seeded)
+ml/configs/train_v1.yaml     splits, tuning grids, calibration, selection rule, capacity, tiers
 ml/src/cura_ml/synth/        event-driven synthetic patient simulator
 ml/src/cura_ml/cohort/       episode/label construction and cohort report
-ml/tests/                    M1 acceptance tests
-docs/                        architecture, prediction target, data dictionary, decisions
+ml/src/cura_ml/features/     declarative feature spec + leakage-safe feature builder
+ml/src/cura_ml/modeling/     splits, models, calibration, metrics, explanations, bundle, reports
+ml/artifacts/models/         saved, versioned model bundles
+ml/tests/                    acceptance, leakage and modelling tests
+docs/                        architecture, prediction target, features, data dictionary, decisions
 ```
