@@ -1,10 +1,10 @@
 # Supabase setup (PostgreSQL + Auth)
 
 Cura AI runs fully locally without Supabase (SQLite + development sign-in). This guide connects it
-to a Supabase project for a hosted demo. **None of these steps have been performed or verified by the
-project author**: no Supabase project or credentials existed while this was built. The code paths are
-covered by automated tests that use locally generated signing keys and offline PostgreSQL migration
-rendering.
+to a Supabase project for a hosted demo. The code paths are covered by automated tests that use
+locally generated signing keys and offline PostgreSQL migration rendering. The live demo now runs on
+Supabase. On 2026-10-16 its API health check reported `auth_mode: "supabase"` and `database: "ok"`.
+The rest of the §6 checklist (sign-in, RLS via the Data API) was not re-run in that check.
 
 ## 1. Create the project
 1. Create a project at supabase.com. Choose a region near your Render region and set a strong

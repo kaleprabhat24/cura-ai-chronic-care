@@ -9,7 +9,9 @@ deterioration or diagnosis. Never present synthetic results as clinical evidence
   non-obvious choice).
 - Status: **all milestones implemented** (data, features, models, backend, frontend, Supabase auth code,
   FHIR export) plus patient onboarding (ADR-022: register/add history in the app, per-patient
-  point-in-time scoring, no schema change). Not deployed; Supabase live connectivity and the HL7 FHIR validator not verified.
+  point-in-time scoring, no schema change). Deployed (Vercel web, Render API `cura-ai-api.onrender.com`,
+  Supabase); live health and unauthenticated-401 checked 2026-10-16. HL7 FHIR validator not run; no CI.
+  `README.md` is the main learning guide.
 - Frontend: `frontend/` (Next.js 15, typed client from `backend/openapi.json` via `npm run gen:api`).
   After changing API schemas: `cura-api openapi` then `npm --prefix frontend run gen:api`.
 - Features: `docs/FEATURES.md` is generated from `ml/src/cura_ml/features/spec.py`. Never edit it by hand.

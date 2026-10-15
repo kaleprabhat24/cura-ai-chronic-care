@@ -73,6 +73,12 @@ REST `/api/v1`: `me`, `dashboard/summary`, `worklist`, `patients/{id}` (+ `timel
 (`simulated_prediction` | `recorded_clinical` | `recorded_outcome`). TypeScript types are generated
 from OpenAPI.
 
+*Implementation note:* this was the plan. The implemented routes differ in places, e.g.
+`/outreach/outcomes`, `/scoring-runs`, `/audit-events` and `/admin/users`, plus the onboarding
+routes. The provenance values are `recorded_synthetic_clinical`, `recorded_synthetic_outcome` and
+`recorded_outreach_outcome`. The authoritative list is `backend/openapi.json`, summarised in the
+README's API reference.
+
 ## 8. UI (M6+)
 App shell with a permanent "synthetic data" banner. Screens:
 - **Worklist** and **Patient 360** (risk card, timeline, outreach panel) — top priority;
@@ -107,4 +113,5 @@ App shell with a permanent "synthetic data" banner. Screens:
 | M8 | Model & Data page, data-quality endpoint | M5/M6 | **done** |
 | M9 | Supabase Auth, roles, audit viewer | M5 | **done** (code + tests; live project not verified) |
 | M10 | FHIR export + validation | M4 | **done** (structural + R4B; HL7 validator not run) |
-| M11 | CI, deployment, demo script | all | prepared (render.yaml, docs/DEPLOYMENT.md); not deployed |
+| M11 | CI, deployment, demo script | all | deployed (Render + Vercel + Supabase; live health and 401 check 2026-10-16); demo script in README §13. **Not done:** GitHub Actions CI, Playwright tests, HL7 validator in CI |
+| — | Patient onboarding (ADR-022) | M4–M6 | **done** |

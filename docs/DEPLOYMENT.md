@@ -1,6 +1,10 @@
 # Deployment (Vercel + Render + Supabase)
 
-Nothing has been deployed by the project author; these are the prepared steps. Do them in order.
+These steps were used for the live demo: web https://cura-ai-chronic-care.vercel.app/, API
+https://cura-ai-api.onrender.com. On 2026-10-16 the live API health check reported production mode,
+Supabase auth and a reachable database, and `/api/v1/me` returned 401 without a token. Signed-in
+flows were reported working by the project owner, but were not re-checked in that pass. Do the steps
+in order.
 
 ## 1. Supabase
 Follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md):
