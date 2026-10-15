@@ -1,0 +1,127 @@
+# Cura AI synthetic cohort — version 1.
+# Every simulation and episode-definition parameter lives here. Changing any value changes the
+# config hash recorded in manifest.json. Section/key names are validated (typos fail loudly).
+#
+# Conventions: "logit" values are on the log-odds scale; "weight" values multiply a standardised
+# latent trait (mean 0, sd 1) or a 0/1 indicator. Day offsets are calendar days.
+
+dataset_version: v1
+seed: 20251015
+
+simulation:
+  start_date: "2020-01-01"      # first day of event history
+  data_cutoff: "2024-12-31"     # simulated "today": the dataset is everything recorded by end of this day
+  n_patients: 5000
+
+population:
+  age_min: 35
+  age_max: 88
+  sex_probs: {female: 0.5, male: 0.5}
+  language_probs: {en: 0.86, es: 0.05, pl: 0.03, ur: 0.03, pa: 0.03}
+  registered_before_start_prob: 0.85
+  late_join_max_days: 1095            # late joiners register within the first 3 years
+  programme_mix: {t2d_only: 0.30, htn_only: 0.40, both: 0.30}
+  incident_condition_prob: 0.12       # condition first diagnosed during the simulation
+  annual_death_hazard_at_60: 0.004
+  death_hazard_age_slope: 0.07        # hazard multiplies by exp(slope) per year of age
+  annual_transfer_out_rate: 0.025
+
+traits:                               # HIDDEN — never written to ordinary records
+  access_deprivation_effect: 0.25     # access barrier shifts by this per deprivation quintile step
+  instability_entry_prob_range: [0.005, 0.06]   # per-month prob of entering an unstable period
+  instability_exit_prob: 0.30                    # per-month prob of leaving an unstable period
+  trust_engagement_corr: 0.5
+
+programmes:
+  t2d:
+    condition_code: "44054006"
+    encounter_type: review_t2d
+    interval_days: 182
+    completion_observation_codes: ["4548-4"]   # an HbA1c result also counts as review completion
+  htn:
+    condition_code: "38341003"
+    encounter_type: review_htn
+    interval_days: 365
+    completion_observation_codes: []           # BP is measured too opportunistically to count
+
+episodes:
+  prediction_lead_days: 14        # t0 = due_date - 14 days
+  completion_grace_days: 30       # label window ends at due_date + 30 days
+  recording_lag_days: 7           # extra days before an outcome is considered mature
+  merge_window_days: 14           # qualifying events within 14 days of an index belong to the same review
+  cold_start_history_days: 180    # flag episodes with < 180 days of encounter history at t0
+
+care_process:
+  invite_lead_days: 28                 # routine recall invitation sent 28 days before due date
+  prebook_base_logit: -0.6             # prob. the next review is booked at the index review
+  prebook_engagement_weight: 0.5
+  prebook_offset_days: [-14, 7]        # prebooked slot relative to due date
+  invite_response_base_logit: 1.0
+  invite_response_engagement_weight: 0.8
+  invite_response_access_weight: 0.5
+  invite_response_unstable_weight: 1.0
+  booking_delay_mean_days: 10
+  booking_lead_days: [5, 35]           # booked-to-scheduled gap for patient bookings
+  outreach_booking_lead_days: [3, 21]
+  clinic_rebook_lead_days: [7, 21]       # new slot relative to the cancelled slot
+  clinic_cancel_prob: 0.04
+  patient_cancel_base_logit: -3.2
+  patient_cancel_unstable_weight: 1.0
+  rebook_after_cancel_base_logit: 0.5
+  rebook_after_noshow_base_logit: -0.5
+  rebook_engagement_weight: 0.7
+  rebook_delay_mean_days: 14
+  re_invite_every_days: 90             # recall letters while a review stays overdue
+  max_re_invites: 8
+
+attendance:
+  base_logit: 2.0
+  engagement_weight: 0.9
+  access_weight: 0.6
+  unstable_weight: 1.2
+  long_lead_weight: 0.25          # penalty per 30 days of booking lead beyond 14 days
+  long_lead_cap_days: 120         # the lead-time penalty stops growing beyond this lead
+  recent_noshow_weight: 0.4       # penalty if a no-show occurred in the previous 180 days
+  year_drift: -0.06               # change in base logit per simulated year (temporal drift)
+  weekday_effects: {mon: -0.10, fri: -0.15}
+  noise_sd: 0.3
+
+outreach_policy:
+  pre_due_reminder_offset_days: -21    # 7 days before t0: reminder for recent no-show patients
+  pre_due_reminder_prob: 0.4
+  pre_due_reminder_lookback_days: 365
+  chase_offsets_days: [7, 30]          # phone chases after the due date
+  chase_probs: [0.6, 0.4]
+  reach_base_logit: 0.0
+  reach_trust_weight: 0.8
+  reach_unstable_weight: 0.8
+  book_when_reached_base_logit: 0.6
+  book_when_reached_engagement_weight: 0.7
+  letter_response_base_logit: -1.2
+  letter_response_engagement_weight: 0.6
+
+clinical:
+  hba1c_baseline: [7.6, 1.1]           # mean, sd (%)
+  hba1c_trend_per_year: 0.15
+  hba1c_trend_engagement_weight: 0.12
+  hba1c_drug_effect: -0.6
+  hba1c_measure_sd: 0.25
+  hba1c_intensify_threshold: 8.0
+  sbp_baseline: [146, 14]              # mean, sd (mm[Hg])
+  sbp_trend_per_year: 1.0
+  sbp_trend_engagement_weight: 0.8
+  sbp_drug_effect: -7.0
+  sbp_measure_sd: 8.0
+  sbp_intensify_threshold: 150
+  intensify_prob: 0.6
+  med_stop_prob: 0.02
+  statin_prob_t2d: 0.6
+  bp_at_t2d_review_prob: 0.7
+  weight_baseline: [86, 16]
+  acute_visits_per_year: 0.8
+  acute_unstable_multiplier: 2.0
+  acute_bp_prob: 0.6
+  acute_weight_prob: 0.3
+
+checks:
+  label_prevalence_band: [0.15, 0.35]

@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Generated synthetic data (reproducible from config + seed; see ml/data/README.md)
+ml/data/*
+!ml/data/README.md
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node (later milestones)
+node_modules/
+.next/

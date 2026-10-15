@@ -1,0 +1,21 @@
+[project]
+name = "cura-ml"
+version = "0.1.0"
+description = "Cura AI synthetic cohort generator, follow-up episodes and (later) ML pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+cura-ml = "cura_ml.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cura_ml"]
